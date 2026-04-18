@@ -1,0 +1,54 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Cormorant Garamond", serif;
+  --font-mono: "JetBrains Mono", monospace;
+  
+  --color-glass-bg: rgba(10, 10, 10, 0.4);
+  --color-glass-border: rgba(255, 255, 255, 0.05);
+  --color-studio-bg: #050505;
+}
+
+@layer base {
+  body {
+    @apply bg-studio-bg text-white antialiased selection:bg-white selection:text-black;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-neutral-800 rounded-full hover:bg-neutral-700 transition-colors;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply bg-glass-bg backdrop-blur-3xl border border-glass-border;
+  }
+  
+  .text-label {
+    @apply text-[10px] uppercase tracking-[0.2em] font-semibold text-neutral-500;
+  }
+
+  .studio-glow {
+    background: radial-gradient(circle at center, rgba(255, 255, 255, 0.03) 0%, transparent 70%);
+  }
+}
+
+/* Texture Overlay */
+.noise-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+  opacity: 0.02;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}

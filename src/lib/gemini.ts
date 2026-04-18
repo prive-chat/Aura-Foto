@@ -17,8 +17,10 @@ export interface ImageGenerationParams {
 }
 
 export async function generateArtisticPortrait(params: ImageGenerationParams): Promise<string> {
-  const realismKeywords = "masterwork, top quality, ultra-photorealistic, 8k uhd, cinematic lighting, incredibly detailed skin texture, hyper-realistic eyes, sharp focus, f/1.8 lens bokeh, soft volumetric shadows, high dynamic range, raw photography, unedited, professional fashion studio lighting, extreme detail, 8k resolution, authentic textures";
-  const fullPrompt = `RAW photorealistic portrait of an elegant woman: ${params.prompt}. Style: ${params.style || 'artistic glamour'}. Technique: ${realismKeywords}. Ensure absolute anatomical correctness and natural lighting.`;
+  const realismKeywords = "raw photo, shot on 35mm lens, f/1.8, incredibly detailed skin pores, natural skin texture, masterpiece, 8k uhd, cinematic lighting, hyper-realistic eyes, sharp focus, professional photography, authentic textures, high dynamic range, subsurface scattering";
+  
+  // Refined prompt to push for ultra-realism and explicitly forbid "drawing" looks
+  const fullPrompt = `PHOTOGRAPH of ${params.prompt}. (NO drawing, NO illustration, NO 3d render, NO painting, NO digital art). This is a professional raw photography shot. Lighting: ${params.style || 'natural'}. Camera settings: ${realismKeywords}. Ensure authentic human features, natural skin imperfections, and photorealistic depth of field.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -34,6 +36,25 @@ export async function generateArtisticPortrait(params: ImageGenerationParams): P
         imageConfig: {
           aspectRatio: params.aspectRatio,
         },
+        // Configuración de seguridad mínima permitida para máxima libertad creativa
+        safetySettings: [
+          {
+            category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+            threshold: 'BLOCK_ONLY_HIGH',
+          },
+          {
+            category: 'HARM_CATEGORY_HATE_SPEECH',
+            threshold: 'BLOCK_ONLY_HIGH',
+          },
+          {
+            category: 'HARM_CATEGORY_HARASSMENT',
+            threshold: 'BLOCK_ONLY_HIGH',
+          },
+          {
+            category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
+            threshold: 'BLOCK_ONLY_HIGH',
+          }
+        ]
       },
     });
 

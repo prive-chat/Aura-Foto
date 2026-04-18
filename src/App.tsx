@@ -51,14 +51,22 @@ export default function App() {
     }
   }, []);
 
-  // Guardar historial cuando cambie
+  // Guardar historial cuando cambie (limitado a los últimos 3 para evitar límites de almacenamiento de base64)
   useEffect(() => {
     try {
       if (typeof window !== 'undefined' && history.length > 0) {
-        localStorage.setItem('aura_history_v1', JSON.stringify(history.slice(0, 12)));
+        // Reducimos el límite drásticamente para evitar QuotaExceededError
+        const limitedHistory = history.slice(0, 3);
+        try {
+          localStorage.setItem('aura_history_v1', JSON.stringify(limitedHistory));
+        } catch (quotaError) {
+          // Fallback agresivo: solo guardar la última imagen si el espacio es muy limitado
+          console.warn("Espacio insuficiente, guardando solo la imagen más reciente.");
+          localStorage.setItem('aura_history_v1', JSON.stringify(history.slice(0, 1)));
+        }
       }
     } catch (e) {
-      console.error("Error al guardar el historial:", e);
+      console.error("Error al gestionar el almacenamiento:", e);
     }
   }, [history]);
 

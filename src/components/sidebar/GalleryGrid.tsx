@@ -1,9 +1,10 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Loader2, Trash2, CloudOff, Download, Maximize2 } from 'lucide-react';
+import { Loader2, Trash2, CloudOff, Download, Maximize2, AlertCircle } from 'lucide-react';
 import { useHistory } from '../../contexts/HistoryContext';
 import { GeneratedImage } from '../../types';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 interface GalleryGridProps {
   onSelectImage: (img: GeneratedImage) => void;
@@ -11,9 +12,11 @@ interface GalleryGridProps {
 
 export function GalleryGrid({ onSelectImage }: GalleryGridProps) {
   const { history, clearHistory, deleteImage, loadMore, hasMore, isLoading } = useHistory();
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const loaderRef = useRef<HTMLDivElement>(null);
 
-  const handleDownload = async (img: GeneratedImage) => {
+  const handleDownload = async (e: React.MouseEvent, img: GeneratedImage) => {
+    e.stopPropagation();
     try {
       const response = await fetch(img.url);
       const blob = await response.blob();
@@ -25,15 +28,21 @@ export function GalleryGrid({ onSelectImage }: GalleryGridProps) {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
+      toast.success("Imagen descargada");
     } catch (err) {
       console.error("Download failed", err);
+      toast.error("Error al descargar");
     }
   };
 
-  const handleDelete = async (e: React.MouseEvent, img: GeneratedImage) => {
+  const handleConfirmDelete = async (e: React.MouseEvent, img: GeneratedImage) => {
     e.stopPropagation();
-    if (confirm('¿Eliminar esta obra permanentemente?')) {
+    try {
       await deleteImage(img.id, img.url);
+      toast.success("Imagen eliminada");
+      setDeletingId(null);
+    } catch (error) {
+      toast.error("Error al eliminar");
     }
   };
 
@@ -72,10 +81,10 @@ export function GalleryGrid({ onSelectImage }: GalleryGridProps) {
         )}
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         <AnimatePresence mode="popLayout">
           {history.map((img, index) => (
-            <motion.button
+            <motion.div
               key={img.id}
               layout
               initial={{ opacity: 0, scale: 0.8, y: 10 }}
@@ -86,7 +95,7 @@ export function GalleryGrid({ onSelectImage }: GalleryGridProps) {
                 delay: index < 12 ? index * 0.05 : 0 
               }}
               onClick={() => onSelectImage(img)}
-              className="aspect-square rounded-xl overflow-hidden border border-black/5 bg-black/[0.01] flex items-center justify-center relative group active:scale-95 transition-transform"
+              className="aspect-square rounded-xl overflow-hidden border border-black/5 bg-black/[0.01] flex items-center justify-center relative group active:scale-95 transition-transform cursor-pointer"
             >
               <img 
                 src={img.url} 
@@ -95,33 +104,72 @@ export function GalleryGrid({ onSelectImage }: GalleryGridProps) {
                 referrerPolicy="no-referrer"
                 loading="lazy"
               />
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="w-8 h-8 rounded-lg bg-white/20 hover:bg-white text-white hover:text-black transition-all"
-                  onClick={(e) => { e.stopPropagation(); onSelectImage(img); }}
-                >
-                  <Maximize2 size={14} />
-                </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="w-8 h-8 rounded-lg bg-white/20 hover:bg-white text-white hover:text-black transition-all"
-                  onClick={(e) => { e.stopPropagation(); handleDownload(img); }}
-                >
-                  <Download size={14} />
-                </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="w-8 h-8 rounded-lg bg-white/20 hover:bg-red-500 text-white transition-all"
-                  onClick={(e) => handleDelete(e, img)}
-                >
-                  <Trash2 size={14} />
-                </Button>
+              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col items-center justify-center p-2 text-center">
+                {deletingId === img.id ? (
+                  <motion.div 
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="flex flex-col items-center gap-2"
+                  >
+                    <AlertCircle className="text-red-400" size={20} />
+                    <p className="text-[8px] text-white font-bold uppercase tracking-tighter leading-tight">
+                      ¿Borrar obra?
+                    </p>
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="h-6 px-2 text-[8px] rounded-md"
+                        onClick={(e) => handleConfirmDelete(e, img)}
+                      >
+                        SÍ
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="h-6 px-2 text-[8px] rounded-md text-black"
+                        onClick={(e) => { e.stopPropagation(); setDeletingId(null); }}
+                      >
+                        NO
+                      </Button>
+                    </div>
+                  </motion.div>
+                ) : (
+                  <div className="flex items-center justify-center gap-1.5">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="w-8 h-8 rounded-full bg-white/20 hover:bg-white text-white hover:text-black transition-all shadow-lg"
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        onSelectImage(img); 
+                      }}
+                    >
+                      <Maximize2 size={14} />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="w-8 h-8 rounded-full bg-white/20 hover:bg-white text-white hover:text-black transition-all shadow-lg"
+                      onClick={(e) => handleDownload(e, img)}
+                    >
+                      <Download size={14} />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="w-8 h-8 rounded-full bg-white/20 hover:bg-red-500 text-white transition-all shadow-lg"
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        setDeletingId(img.id); 
+                      }}
+                    >
+                      <Trash2 size={14} />
+                    </Button>
+                  </div>
+                )}
               </div>
-            </motion.button>
+            </motion.div>
           ))}
         </AnimatePresence>
       </div>

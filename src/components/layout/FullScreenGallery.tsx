@@ -54,7 +54,7 @@ export function FullScreenGallery({ onClose, onSelectImage, onOpenLightbox }: Fu
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] bg-studio-bg flex flex-col h-screen"
+      className="fixed inset-0 z-[100] bg-studio-bg flex flex-col h-[100dvh]"
     >
       <div className="noise-overlay opacity-30 pointer-events-none" />
       

@@ -258,9 +258,10 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
             </div>
 
             <div className="bg-white border border-black/5 rounded-3xl overflow-hidden">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-black/5 bg-black/[0.02]">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse min-w-[600px]">
+                  <thead>
+                    <tr className="border-b border-black/5 bg-black/[0.02]">
                     <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-neutral-400 font-bold">Vista Previa</th>
                     <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-neutral-400 font-bold">Usuario ID</th>
                     <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-neutral-400 font-bold">Fecha</th>
@@ -301,6 +302,7 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
                   )}
                 </tbody>
               </table>
+              </div>
             </div>
           </div>
 
@@ -365,70 +367,72 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
             <h2 className="text-xl font-serif font-light">Gestión de Usuarios</h2>
             <div className="bg-white border border-black/5 rounded-3xl overflow-hidden">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-black/5 bg-black/[0.02]">
-                    <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-neutral-400 font-bold">Email</th>
-                    <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-neutral-400 font-bold">Rol</th>
-                    <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-neutral-400 font-bold">Límite Diario</th>
-                    <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-neutral-400 font-bold">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-black/5">
-                  {users.map((user) => (
-                    <tr key={user.id} className="hover:bg-black/[0.01] transition-colors">
-                      <td className="px-6 py-4">
-                        <p className="text-sm font-medium">{user.email}</p>
-                        <p className="text-[10px] text-neutral-400 font-mono italic">UID: {user.id}</p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter ${user.is_super_admin ? 'bg-black text-white' : 'bg-neutral-100 text-neutral-400'}`}>
-                          {user.is_super_admin ? 'Superadmin' : 'Usuario'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-xs font-bold">
-                        <div className="flex items-center gap-3">
-                          <span>{user.daily_usage_count} / {user.max_daily_limit}</span>
-                          <div className="flex gap-1">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse min-w-[700px]">
+                  <thead>
+                    <tr className="border-b border-black/5 bg-black/[0.02]">
+                      <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-neutral-400 font-bold">Email</th>
+                      <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-neutral-400 font-bold">Rol</th>
+                      <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-neutral-400 font-bold">Límite Diario</th>
+                      <th className="px-6 py-4 text-[10px] uppercase tracking-widest text-neutral-400 font-bold">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-black/5">
+                    {users.map((user) => (
+                      <tr key={user.id} className="hover:bg-black/[0.01] transition-colors">
+                        <td className="px-6 py-4">
+                          <p className="text-sm font-medium">{user.email}</p>
+                          <p className="text-[10px] text-neutral-400 font-mono italic">UID: {user.id}</p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter ${user.is_super_admin ? 'bg-black text-white' : 'bg-neutral-100 text-neutral-400'}`}>
+                            {user.is_super_admin ? 'Superadmin' : 'Usuario'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-xs font-bold">
+                          <div className="flex items-center gap-3">
+                            <span>{user.daily_usage_count} / {user.max_daily_limit}</span>
+                            <div className="flex gap-1">
+                              <button 
+                                onClick={() => adjustLimit(user.id, user.max_daily_limit, -5)}
+                                className="w-5 h-5 flex items-center justify-center bg-black/5 rounded hover:bg-black hover:text-white transition-all"
+                              >
+                                -
+                              </button>
+                              <button 
+                                onClick={() => adjustLimit(user.id, user.max_daily_limit, 5)}
+                                className="w-5 h-5 flex items-center justify-center bg-black/5 rounded hover:bg-black hover:text-white transition-all"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
                             <button 
-                              onClick={() => adjustLimit(user.id, user.max_daily_limit, -5)}
-                              className="w-5 h-5 flex items-center justify-center bg-black/5 rounded hover:bg-black hover:text-white transition-all"
+                              onClick={() => toggleAdmin(user.id, user.is_super_admin)}
+                              className={`text-[9px] font-bold uppercase tracking-widest border px-3 py-1.5 rounded-lg transition-all ${
+                                user.is_super_admin 
+                                  ? 'bg-black text-white border-black' 
+                                  : 'border-black/10 hover:bg-black hover:text-white'
+                              }`}
                             >
-                              -
+                              {user.is_super_admin ? 'Quitar Admin' : 'Hacer Admin'}
                             </button>
                             <button 
-                              onClick={() => adjustLimit(user.id, user.max_daily_limit, 5)}
-                              className="w-5 h-5 flex items-center justify-center bg-black/5 rounded hover:bg-black hover:text-white transition-all"
+                              onClick={() => resetUsage(user.id)}
+                              className="text-[9px] font-bold uppercase tracking-widest border border-orange-200 text-orange-600 px-3 py-1.5 rounded-lg hover:bg-orange-500 hover:text-white transition-all"
                             >
-                              +
+                              Reset Uso
                             </button>
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <button 
-                            onClick={() => toggleAdmin(user.id, user.is_super_admin)}
-                            className={`text-[9px] font-bold uppercase tracking-widest border px-3 py-1.5 rounded-lg transition-all ${
-                              user.is_super_admin 
-                                ? 'bg-black text-white border-black' 
-                                : 'border-black/10 hover:bg-black hover:text-white'
-                            }`}
-                          >
-                            {user.is_super_admin ? 'Quitar Admin' : 'Hacer Admin'}
-                          </button>
-                          <button 
-                            onClick={() => resetUsage(user.id)}
-                            className="text-[9px] font-bold uppercase tracking-widest border border-orange-200 text-orange-600 px-3 py-1.5 rounded-lg hover:bg-orange-500 hover:text-white transition-all"
-                          >
-                            Reset Uso
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}

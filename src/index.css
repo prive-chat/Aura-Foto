@@ -19,6 +19,11 @@
 }
 
 @layer base {
+  html, body, #root {
+    height: 100%;
+    @apply overflow-x-hidden;
+  }
+
   body {
     @apply antialiased selection:bg-black selection:text-white bg-background text-foreground;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";

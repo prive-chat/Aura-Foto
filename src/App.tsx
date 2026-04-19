@@ -29,7 +29,7 @@ function AuraApp() {
 
   if (isLoading) {
     return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center bg-studio-bg gap-6">
+      <div className="h-[100dvh] w-screen flex flex-col items-center justify-center bg-studio-bg gap-6">
         <div className="relative">
           <Loader2 className="animate-spin text-black/20" size={48} />
           <div className="absolute inset-0 flex items-center justify-center">
@@ -58,7 +58,7 @@ function AuraApp() {
   };
 
   return (
-    <div className="min-h-screen bg-studio-bg text-neutral-900 font-sans selection:bg-black selection:text-white flex flex-col md:flex-row md:h-screen overflow-x-hidden md:overflow-hidden relative">
+    <div className="min-h-[100dvh] bg-studio-bg text-neutral-900 font-sans selection:bg-black selection:text-white flex flex-col md:flex-row md:h-[100dvh] overflow-x-hidden md:overflow-hidden relative">
       <div className="noise-overlay" />
       
       <LoginModal />

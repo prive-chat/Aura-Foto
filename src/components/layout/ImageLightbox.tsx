@@ -16,7 +16,7 @@ export function ImageLightbox({ image, onClose }: ImageLightboxProps) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[200] bg-black flex items-center justify-center cursor-pointer"
+      className="fixed inset-0 z-[200] bg-black flex items-center justify-center cursor-pointer h-[100dvh]"
       onClick={onClose}
     >
       <div className="absolute top-6 right-6 z-10">

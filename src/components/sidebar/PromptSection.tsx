@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'motion/react';
 import { Sparkles, Wand2, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -60,13 +61,27 @@ export function PromptSection({
         />
         <Button
           variant="ghost"
-          size="icon"
+          size="sm"
           onClick={onEnhance}
           disabled={isEnhancing || !prompt.trim()}
-          className="absolute top-4 right-4 h-9 w-9 bg-black/5 hover:bg-black text-neutral-400 hover:text-white rounded-xl transition-all border border-black/5 hover:border-black disabled:opacity-30"
+          className="absolute top-4 right-4 h-9 px-3 bg-black/5 hover:bg-black text-neutral-400 hover:text-white rounded-xl transition-all border border-black/5 hover:border-black disabled:opacity-30 gap-2 overflow-hidden group/magic"
           title="Mejorar con IA (Magic Prompt)"
         >
-          {isEnhancing ? <Loader2 size={18} className="animate-spin" /> : <Wand2 size={18} />}
+          {isEnhancing ? (
+            <Loader2 size={16} className="animate-spin" />
+          ) : (
+            <>
+              <Wand2 size={16} className="group-hover/magic:rotate-12 transition-transform" />
+              <span className="text-[9px] font-bold uppercase tracking-wider hidden sm:inline">Magia IA</span>
+            </>
+          )}
+          {isEnhancing && (
+            <motion.div 
+              className="absolute inset-0 bg-white/10"
+              animate={{ x: ['-100%', '100%'] }}
+              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+            />
+          )}
         </Button>
         <div className="absolute bottom-4 right-4 text-[10px] text-neutral-600 font-mono">
           {prompt.length} / 500

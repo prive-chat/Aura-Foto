@@ -163,9 +163,11 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
 
       // 2. Delete from storage if it's a supabase URL
       if (url.includes('supabase.co')) {
-        const path = url.split('/').slice(-1)[0];
-        if (path && user) {
-          await supabase.storage.from('images').remove([`${user.id}/${path}`]);
+        const bucketName = 'images';
+        const parts = url.split(`${bucketName}/`);
+        if (parts.length > 1) {
+          const fullPath = parts[1];
+          await supabase.storage.from(bucketName).remove([fullPath]);
         }
       }
     } catch (error) {

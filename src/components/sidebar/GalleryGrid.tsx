@@ -65,6 +65,19 @@ export function GalleryGrid({ onSelectImage, onOpenGallery, onOpenLightbox }: Ga
     return () => observer.disconnect();
   }, [hasMore, isLoading, loadMore]);
 
+  const GallerySkeleton = () => (
+    <div className="grid grid-cols-3 gap-3">
+      {[1, 2, 3, 4, 5, 6].map((i) => (
+        <div 
+          key={i} 
+          className="aspect-square rounded-xl bg-black/[0.03] animate-pulse overflow-hidden relative"
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_1.5s_infinite]" />
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between mb-6">
@@ -96,100 +109,104 @@ export function GalleryGrid({ onSelectImage, onOpenGallery, onOpenLightbox }: Ga
       </div>
 
       <div className="grid grid-cols-3 gap-3">
-        <AnimatePresence mode="popLayout">
-          {history.map((img, index) => (
-            <motion.div
-              key={img.id}
-              layout
-              initial={{ opacity: 0, scale: 0.8, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              transition={{ 
-                duration: 0.4,
-                delay: index < 12 ? index * 0.05 : 0 
-              }}
-              onClick={() => onSelectImage(img)}
-              className="aspect-square rounded-xl overflow-hidden border border-black/5 bg-black/[0.01] flex items-center justify-center relative group active:scale-95 transition-transform cursor-pointer"
-            >
-              <img 
-                src={img.url} 
-                alt="Thumbnail" 
-                className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110" 
-                referrerPolicy="no-referrer"
-                loading="lazy"
-              />
-              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col items-center justify-center p-2 text-center">
-                {deletingId === img.id ? (
-                  <motion.div 
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    className="flex flex-col items-center gap-2"
-                  >
-                    <AlertCircle className="text-red-400" size={20} />
-                    <p className="text-[8px] text-white font-bold uppercase tracking-tighter leading-tight">
-                      ¿Borrar obra?
-                    </p>
-                    <div className="flex gap-1">
+        {history.length === 0 && isLoading ? (
+          <GallerySkeleton />
+        ) : (
+          <AnimatePresence mode="popLayout">
+            {history.map((img, index) => (
+              <motion.div
+                key={img.id}
+                layout
+                initial={{ opacity: 0, scale: 0.8, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={{ 
+                  duration: 0.4,
+                  delay: index < 12 ? index * 0.05 : 0 
+                }}
+                onClick={() => onSelectImage(img)}
+                className="aspect-square rounded-xl overflow-hidden border border-black/5 bg-black/[0.01] flex items-center justify-center relative group active:scale-95 transition-transform cursor-pointer"
+              >
+                <img 
+                  src={img.url} 
+                  alt="Thumbnail" 
+                  className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110" 
+                  referrerPolicy="no-referrer"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col items-center justify-center p-2 text-center">
+                  {deletingId === img.id ? (
+                    <motion.div 
+                      initial={{ scale: 0.9, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      className="flex flex-col items-center gap-2"
+                    >
+                      <AlertCircle className="text-red-400" size={20} />
+                      <p className="text-[8px] text-white font-bold uppercase tracking-tighter leading-tight">
+                        ¿Borrar obra?
+                      </p>
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="h-6 px-2 text-[8px] rounded-md"
+                          onClick={(e) => handleConfirmDelete(e, img)}
+                        >
+                          SÍ
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="h-6 px-2 text-[8px] rounded-md text-black"
+                          onClick={(e) => { e.stopPropagation(); setDeletingId(null); }}
+                        >
+                          NO
+                        </Button>
+                      </div>
+                    </motion.div>
+                  ) : (
+                    <div className="flex items-center justify-center gap-1.5">
                       <Button
-                        size="sm"
-                        variant="destructive"
-                        className="h-6 px-2 text-[8px] rounded-md"
-                        onClick={(e) => handleConfirmDelete(e, img)}
+                        size="icon"
+                        variant="ghost"
+                        className="w-8 h-8 rounded-full bg-white/20 hover:bg-white text-white hover:text-black transition-all shadow-lg"
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          if (onOpenLightbox) {
+                            onOpenLightbox(img);
+                          } else {
+                            onSelectImage(img);
+                          }
+                        }}
                       >
-                        SÍ
+                        <Maximize2 size={14} />
                       </Button>
                       <Button
-                        size="sm"
-                        variant="secondary"
-                        className="h-6 px-2 text-[8px] rounded-md text-black"
-                        onClick={(e) => { e.stopPropagation(); setDeletingId(null); }}
+                        size="icon"
+                        variant="ghost"
+                        className="w-8 h-8 rounded-full bg-white/20 hover:bg-white text-white hover:text-black transition-all shadow-lg"
+                        onClick={(e) => handleDownload(e, img)}
                       >
-                        NO
+                        <Download size={14} />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="w-8 h-8 rounded-full bg-white/20 hover:bg-red-500 text-white transition-all shadow-lg"
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          setDeletingId(img.id); 
+                        }}
+                      >
+                        <Trash2 size={14} />
                       </Button>
                     </div>
-                  </motion.div>
-                ) : (
-                  <div className="flex items-center justify-center gap-1.5">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="w-8 h-8 rounded-full bg-white/20 hover:bg-white text-white hover:text-black transition-all shadow-lg"
-                      onClick={(e) => { 
-                        e.stopPropagation(); 
-                        if (onOpenLightbox) {
-                          onOpenLightbox(img);
-                        } else {
-                          onSelectImage(img);
-                        }
-                      }}
-                    >
-                      <Maximize2 size={14} />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="w-8 h-8 rounded-full bg-white/20 hover:bg-white text-white hover:text-black transition-all shadow-lg"
-                      onClick={(e) => handleDownload(e, img)}
-                    >
-                      <Download size={14} />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="w-8 h-8 rounded-full bg-white/20 hover:bg-red-500 text-white transition-all shadow-lg"
-                      onClick={(e) => { 
-                        e.stopPropagation(); 
-                        setDeletingId(img.id); 
-                      }}
-                    >
-                      <Trash2 size={14} />
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        )}
       </div>
 
       {history.length === 0 && !isLoading && (

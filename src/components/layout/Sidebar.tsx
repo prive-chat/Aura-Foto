@@ -1,6 +1,7 @@
 import React from 'react';
-import { Plus, LogOut, LogIn, ShieldCheck, Loader2 } from 'lucide-react';
+import { Plus, LogOut, LogIn, ShieldCheck, Loader2, Download as DownloadIcon } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { usePWA } from '../../hooks/usePWA';
 import { PromptSection } from '../sidebar/PromptSection';
 import { ArtisticControls } from '../sidebar/ArtisticControls';
 import { CharacterLibrary } from '../sidebar/CharacterLibrary';
@@ -38,6 +39,7 @@ interface SidebarProps {
 
 export function Sidebar(props: SidebarProps) {
   const { user, isAdmin, signOut, setShowLoginModal } = useAuth();
+  const { canInstall, install } = usePWA();
 
   return (
     <aside className="order-2 md:order-1 w-full md:w-[420px] glass-panel h-screen flex flex-col shrink-0 z-40 border-r border-black/5">
@@ -47,6 +49,16 @@ export function Sidebar(props: SidebarProps) {
           AURA <span className="text-neutral-500 font-sans text-[10px] tracking-[0.4em] uppercase font-bold">Studio</span>
         </h1>
         <div className="flex items-center gap-2">
+          {canInstall && (
+            <Button 
+              size="sm"
+              variant="outline"
+              onClick={install}
+              className="h-8 rounded-full border-black/5 bg-black/5 hover:bg-black hover:text-white transition-all text-[9px] uppercase tracking-widest font-bold px-3 gap-1.5"
+            >
+              <DownloadIcon size={12} /> Instalar
+            </Button>
+          )}
           {user && isAdmin && (
             <Button 
               size="icon"

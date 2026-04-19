@@ -47,6 +47,11 @@
     @apply bg-glass-bg backdrop-blur-3xl border border-glass-border;
   }
 
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+
   .text-label {
     @apply text-[10px] uppercase tracking-[0.2em] font-semibold text-neutral-500;
   }

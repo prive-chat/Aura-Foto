@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useHistory } from '../contexts/HistoryContext';
 import { generateArtisticPortrait, enhancePrompt } from '../lib/gemini';
@@ -18,6 +18,28 @@ export function useImageGeneration() {
   
   const { user, profile, refreshProfile } = useAuth();
   const { addImages } = useHistory();
+
+  // Persistencia de configuraciones
+  useEffect(() => {
+    const saved = localStorage.getItem('aura-settings');
+    if (saved) {
+      try {
+        const { prompt: p, style: s, aspectRatio: a, isHighRes: h, batchCount: b } = JSON.parse(saved);
+        if (p) setPrompt(p);
+        if (s) setStyle(s);
+        if (a) setAspectRatio(a);
+        if (h !== undefined) setIsHighRes(h);
+        if (b) setBatchCount(b);
+      } catch (e) {
+        console.error("Error loading settings", e);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const settings = { prompt, style, aspectRatio, isHighRes, batchCount };
+    localStorage.setItem('aura-settings', JSON.stringify(settings));
+  }, [prompt, style, aspectRatio, isHighRes, batchCount]);
 
   const handleEnhancePrompt = async () => {
     if (!prompt.trim()) return;

@@ -11,7 +11,9 @@ import {
   Filter,
   X,
   RefreshCw,
-  AlertTriangle
+  AlertTriangle,
+  Star,
+  Flag
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { GeneratedImage } from '../../types';
@@ -62,6 +64,29 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
     }
   };
 
+  const adjustLimit = async (userId: string, currentLimit: number, adjustment: number) => {
+    const newLimit = Math.max(0, currentLimit + adjustment);
+    const { error } = await supabase
+      .from('profiles')
+      .update({ max_daily_limit: newLimit })
+      .eq('id', userId);
+    
+    if (!error) {
+      setUsers(users.map(u => u.id === userId ? { ...u, max_daily_limit: newLimit } : u));
+    }
+  };
+
+  const resetUsage = async (userId: string) => {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ daily_usage_count: 0 })
+      .eq('id', userId);
+    
+    if (!error) {
+      setUsers(users.map(u => u.id === userId ? { ...u, daily_usage_count: 0 } : u));
+    }
+  };
+
   const fetchAdminData = async () => {
     setIsLoading(true);
     try {
@@ -82,7 +107,13 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
         storageUsed: `${((imageCount || 0) * 0.5).toFixed(1)} MB`
       });
 
-      if (images) setRecentImages(images as any);
+      if (images) {
+        setRecentImages(images.map((img: any) => ({
+          ...img,
+          isFeatured: img.is_featured,
+          isFlagged: img.is_flagged
+        })));
+      }
     } catch (error) {
       console.error('Error fetching admin data:', error);
     } finally {
@@ -95,10 +126,26 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
     if (!error) {
       setRecentImages(prev => prev.filter(img => img.id !== id));
       // Delete from storage
-      const path = url.split('/').pop();
-      if (path) {
-        await supabase.storage.from('images').remove([path]);
+      const bucketName = 'images';
+      const parts = url.split(`${bucketName}/`);
+      if (parts.length > 1) {
+        const fullPath = parts[1];
+        await supabase.storage.from(bucketName).remove([fullPath]);
       }
+    }
+  };
+
+  const toggleFeatured = async (id: string, current: boolean) => {
+    const { error } = await supabase.from('images').update({ is_featured: !current }).eq('id', id);
+    if (!error) {
+      setRecentImages(prev => prev.map(img => img.id === id ? { ...img, is_featured: !current } : img));
+    }
+  };
+
+  const toggleFlagged = async (id: string, current: boolean) => {
+    const { error } = await supabase.from('images').update({ is_flagged: !current }).eq('id', id);
+    if (!error) {
+      setRecentImages(prev => prev.map(img => img.id === id ? { ...img, is_flagged: !current } : img));
     }
   };
 
@@ -340,15 +387,43 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-xs font-bold">
-                        {user.daily_usage_count} / {user.max_daily_limit}
+                        <div className="flex items-center gap-3">
+                          <span>{user.daily_usage_count} / {user.max_daily_limit}</span>
+                          <div className="flex gap-1">
+                            <button 
+                              onClick={() => adjustLimit(user.id, user.max_daily_limit, -5)}
+                              className="w-5 h-5 flex items-center justify-center bg-black/5 rounded hover:bg-black hover:text-white transition-all"
+                            >
+                              -
+                            </button>
+                            <button 
+                              onClick={() => adjustLimit(user.id, user.max_daily_limit, 5)}
+                              className="w-5 h-5 flex items-center justify-center bg-black/5 rounded hover:bg-black hover:text-white transition-all"
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
                       </td>
                       <td className="px-6 py-4">
-                        <button 
-                          onClick={() => toggleAdmin(user.id, user.is_super_admin)}
-                          className="text-[9px] font-bold uppercase tracking-widest border border-black/10 px-3 py-1.5 rounded-lg hover:bg-black hover:text-white transition-all"
-                        >
-                          {user.is_super_admin ? 'Quitar Admin' : 'Hacer Admin'}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button 
+                            onClick={() => toggleAdmin(user.id, user.is_super_admin)}
+                            className={`text-[9px] font-bold uppercase tracking-widest border px-3 py-1.5 rounded-lg transition-all ${
+                              user.is_super_admin 
+                                ? 'bg-black text-white border-black' 
+                                : 'border-black/10 hover:bg-black hover:text-white'
+                            }`}
+                          >
+                            {user.is_super_admin ? 'Quitar Admin' : 'Hacer Admin'}
+                          </button>
+                          <button 
+                            onClick={() => resetUsage(user.id)}
+                            className="text-[9px] font-bold uppercase tracking-widest border border-orange-200 text-orange-600 px-3 py-1.5 rounded-lg hover:bg-orange-500 hover:text-white transition-all"
+                          >
+                            Reset Uso
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -365,13 +440,48 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
               {recentImages.map((img) => (
                 <div key={img.id} className="group relative aspect-square rounded-2xl overflow-hidden border border-black/5 bg-neutral-100 shadow-sm">
                   <img src={img.url} alt="" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700" referrerPolicy="no-referrer" />
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4 gap-2">
-                    <p className="text-[8px] text-white/60 line-clamp-2 italic">"{img.prompt}"</p>
+                  
+                  {/* Status Badges */}
+                  <div className="absolute top-2 left-2 flex gap-1">
+                    {img.isFeatured && (
+                      <div className="bg-yellow-400 p-1.5 rounded-lg shadow-lg">
+                        <Star size={10} className="fill-white text-white" />
+                      </div>
+                    )}
+                    {img.isFlagged && (
+                      <div className="bg-red-500 p-1.5 rounded-lg shadow-lg">
+                        <Flag size={10} className="fill-white text-white" />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3 gap-2">
+                    <p className="text-[8px] text-white/60 line-clamp-2 italic mb-2">"{img.prompt}"</p>
+                    
+                    <div className="flex gap-1.5">
+                      <button 
+                        onClick={() => toggleFeatured(img.id, img.isFeatured || false)}
+                        className={`flex-1 py-1.5 rounded-lg text-[8px] font-bold uppercase tracking-widest transition-colors ${
+                          img.isFeatured ? 'bg-yellow-400 text-white' : 'bg-white/10 text-white hover:bg-white/20'
+                        }`}
+                      >
+                        Destacar
+                      </button>
+                      <button 
+                        onClick={() => toggleFlagged(img.id, img.isFlagged || false)}
+                        className={`flex-1 py-1.5 rounded-lg text-[8px] font-bold uppercase tracking-widest transition-colors ${
+                          img.isFlagged ? 'bg-red-500 text-white' : 'bg-white/10 text-white hover:bg-white/20'
+                        }`}
+                      >
+                        Reportar
+                      </button>
+                    </div>
+
                     <button 
                       onClick={() => deleteImage(img.id, img.url)}
                       className="w-full py-2 bg-white text-black text-[8px] font-bold uppercase tracking-widest rounded-lg hover:bg-red-500 hover:text-white transition-colors"
                     >
-                      Borrar
+                      Borrar Permanentemente
                     </button>
                   </div>
                 </div>

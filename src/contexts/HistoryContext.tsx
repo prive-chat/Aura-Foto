@@ -7,8 +7,11 @@ interface HistoryContextType {
   history: GeneratedImage[];
   setHistory: React.Dispatch<React.SetStateAction<GeneratedImage[]>>;
   addImages: (newImages: GeneratedImage[]) => void;
+  deleteImage: (id: string, url: string) => Promise<void>;
   clearHistory: () => Promise<void>;
+  loadMore: () => Promise<void>;
   isLoading: boolean;
+  hasMore: boolean;
 }
 
 const HistoryContext = createContext<HistoryContextType | undefined>(undefined);
@@ -18,40 +21,126 @@ const LOCAL_STORAGE_KEY = 'aura_history_v1';
 export function HistoryProvider({ children }: { children: React.ReactNode }) {
   const [history, setHistory] = useState<GeneratedImage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(0);
   const { user } = useAuth();
 
-  useEffect(() => {
-    async function loadHistory() {
-      setIsLoading(true);
-      if (user) {
-        const { data, error } = await supabase
-          .from('images')
-          .select('*')
-          .order('created_at', { ascending: false });
-        
-        if (data && !error) {
-          setHistory(data.map(img => ({
-            id: img.id,
-            url: img.url,
-            prompt: img.prompt,
-            timestamp: new Date(img.created_at).getTime(),
-            userId: img.user_id
-          })));
+  const PAGE_SIZE = 24;
+
+  const fetchHistory = async (pageToLoad: number) => {
+    if (!user) return;
+    
+    setIsLoading(true);
+    try {
+      const from = pageToLoad * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+
+      const { data, error } = await supabase
+        .from('images')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .range(from, to);
+      
+      if (data && !error) {
+        const mapped = data.map(img => ({
+          id: img.id,
+          url: img.url,
+          prompt: img.prompt,
+          timestamp: new Date(img.created_at).getTime(),
+          userId: img.user_id,
+          isFeatured: img.is_featured,
+          isFlagged: img.is_flagged
+        }));
+
+        if (pageToLoad === 0) {
+          setHistory(mapped);
+        } else {
+          setHistory(prev => [...prev, ...mapped]);
         }
-      } else {
-        const localData = localStorage.getItem(LOCAL_STORAGE_KEY);
-        if (localData) {
-          try {
-            setHistory(JSON.parse(localData));
-          } catch (e) {
-            console.error("Error parsing local history", e);
-          }
+        
+        setHasMore(data.length === PAGE_SIZE);
+      }
+    } catch (err) {
+      console.error("Error loading history:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!user) {
+      const localData = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (localData) {
+        try {
+          setHistory(JSON.parse(localData));
+        } catch (e) {
+          console.error("Error parsing local history", e);
         }
       }
       setIsLoading(false);
+      setHasMore(false);
+      return;
     }
-    loadHistory();
+
+    setPage(0);
+    fetchHistory(0);
+
+    // Real-time synchronization
+    const channel = supabase
+      .channel(`user-images-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'images',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          const newImg = payload.new;
+          setHistory((prev) => {
+            // Avoid duplicates
+            if (prev.some((img) => img.id === newImg.id)) return prev;
+            
+            const mapped = {
+              id: newImg.id,
+              url: newImg.url,
+              prompt: newImg.prompt,
+              timestamp: new Date(newImg.created_at).getTime(),
+              userId: newImg.user_id,
+              isFeatured: newImg.is_featured,
+              isFlagged: newImg.is_flagged
+            };
+            return [mapped, ...prev];
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'images',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          setHistory((prev) => prev.filter((img) => img.id !== payload.old.id));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
+
+  const loadMore = async () => {
+    if (!hasMore || isLoading || !user) return;
+    const nextPage = page + 1;
+    setPage(nextPage);
+    await fetchHistory(nextPage);
+  };
 
   // Sync with local storage when not logged in
   useEffect(() => {
@@ -64,6 +153,26 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
     setHistory(prev => [...newImages, ...prev]);
   };
 
+  const deleteImage = async (id: string, url: string) => {
+    // Optimistic update
+    setHistory(prev => prev.filter(img => img.id !== id));
+
+    try {
+      // 1. Delete from DB
+      await supabase.from('images').delete().eq('id', id);
+
+      // 2. Delete from storage if it's a supabase URL
+      if (url.includes('supabase.co')) {
+        const path = url.split('/').slice(-1)[0];
+        if (path && user) {
+          await supabase.storage.from('images').remove([`${user.id}/${path}`]);
+        }
+      }
+    } catch (error) {
+      console.error("Error deleting image:", error);
+    }
+  };
+
   const clearHistory = async () => {
     if (user) {
       await supabase.from('images').delete().eq('user_id', user.id);
@@ -73,7 +182,15 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <HistoryContext.Provider value={{ history, setHistory, addImages, clearHistory, isLoading }}>
+    <HistoryContext.Provider value={{ 
+      history, 
+      setHistory, 
+      addImages, 
+      clearHistory, 
+      loadMore, 
+      isLoading, 
+      hasMore 
+    }}>
       {children}
     </HistoryContext.Provider>
   );

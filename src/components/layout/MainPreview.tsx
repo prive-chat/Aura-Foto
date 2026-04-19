@@ -1,70 +1,104 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Image as ImageIcon, Maximize2, Download, X, Sliders, Minimize2, Sun, Wind, Layers } from 'lucide-react';
-import { GeneratedImage, ImageFilters } from '../../types';
+import { 
+  Image as ImageIcon, 
+  Maximize2, 
+  X, 
+  Sun, 
+  Wind, 
+  Layers, 
+  Paintbrush, 
+  Sparkles,
+  Download,
+  Share2
+} from 'lucide-react';
+import { GeneratedImage } from '../../types';
+import { ImageEditor } from './ImageEditor';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 interface MainPreviewProps {
   selectedImage: GeneratedImage | null;
   onClose: () => void;
   aspectRatio: string;
+  onVariation: (image: GeneratedImage) => void;
 }
 
-export function MainPreview({ selectedImage, onClose, aspectRatio }: MainPreviewProps) {
-  const [isFullScreen, setIsFullScreen] = useState(false);
-  const [filters, setFilters] = useState<ImageFilters>({
-    brightness: 100,
-    contrast: 100,
-    saturation: 100,
-    grayscale: 0
-  });
+export function MainPreview({ selectedImage, onClose, aspectRatio, onVariation }: MainPreviewProps) {
+  const [isEditing, setIsEditing] = useState(false);
 
   return (
     <main className="order-1 md:order-2 flex-1 bg-studio-bg flex items-center justify-center p-4 md:p-12 relative min-h-[50vh] md:min-h-0 overflow-hidden">
       {/* Background Ambient Glow */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[20%] left-[30%] w-[60vw] h-[60vw] md:w-[40vw] md:h-[40vw] bg-black/5 rounded-full blur-[80px] md:blur-[120px]" />
-        <div className="absolute bottom-[20%] right-[30%] w-[60vw] h-[60vw] md:w-[40vw] md:h-[40vw] bg-black/5 rounded-full blur-[80px] md:blur-[120px]" />
+        <div className="absolute top-[20%] left-[30%] w-[60vw] h-[60vw] md:w-[40vw] md:h-[40vw] bg-black/[0.03] rounded-full blur-[80px] md:blur-[120px]" />
+        <div className="absolute bottom-[20%] right-[30%] w-[60vw] h-[60vw] md:w-[40vw] md:h-[40vw] bg-black/[0.03] rounded-full blur-[80px] md:blur-[120px]" />
       </div>
 
       <AnimatePresence mode="wait">
         {selectedImage ? (
           <motion.div
             key={selectedImage.id}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.05 }}
-            className="relative w-full h-full flex flex-col items-center justify-center"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="relative w-full h-full flex flex-col items-center justify-center max-w-4xl"
           >
-            <div 
-              className="relative shadow-2xl rounded-lg overflow-hidden border border-black/5 glass-panel"
-              style={{ aspectRatio: aspectRatio.replace(':', '/') }}
-            >
-              <img 
-                src={selectedImage.url} 
-                alt="Preview"
-                className="w-full h-full object-contain"
-                style={{
-                  filter: `brightness(${filters.brightness}%) contrast(${filters.contrast}%) saturate(${filters.saturation}%) grayscale(${filters.grayscale}%)`
+            <div className="relative group w-full flex flex-col items-center">
+              <div 
+                className="relative shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] rounded-2xl overflow-hidden glass-panel border border-black/5"
+                style={{ 
+                  aspectRatio: aspectRatio.replace(':', '/'),
+                  width: 'min(100%, 600px)',
+                  maxHeight: '70vh'
                 }}
-                referrerPolicy="no-referrer"
-              />
-            </div>
-            
-            <div className="mt-8 w-full max-w-2xl text-center space-y-4">
-              <p className="text-sm md:text-lg text-black/80 font-serif italic italic leading-relaxed">"{selectedImage.prompt}"</p>
-              <div className="flex gap-6 items-center justify-center">
-                <button 
-                  onClick={() => setIsFullScreen(true)}
-                  className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-black hover:text-neutral-500 transition-all font-bold"
-                >
-                  <Maximize2 size={14} /> <span>Pantalla Completa</span>
-                </button>
-                <button 
-                  onClick={onClose}
-                  className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-neutral-400 hover:text-black transition-all font-bold"
-                >
-                  <X size={14} /> <span>Cerrar</span>
-                </button>
+              >
+                <img 
+                  src={selectedImage.url} 
+                  alt="Preview"
+                  className="w-full h-full object-contain"
+                  referrerPolicy="no-referrer"
+                />
+
+                {/* Quick Actions Overlay */}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-500 backdrop-blur-sm flex items-center justify-center gap-4">
+                  <Button 
+                    onClick={() => setIsEditing(true)}
+                    className="bg-white text-black hover:bg-neutral-100 rounded-full h-14 px-8 gap-2 font-bold uppercase tracking-widest text-[10px]"
+                  >
+                    <Paintbrush size={16} /> Abrir Editor
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={() => onVariation(selectedImage)}
+                    className="bg-white/10 text-white hover:bg-white/20 border-white/20 rounded-full h-14 px-8 gap-2 font-bold uppercase tracking-widest text-[10px]"
+                  >
+                    <Sparkles size={16} /> Crear Variación
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="pt-8 text-center space-y-6 max-w-xl">
+                <div className="flex flex-wrap items-center justify-center gap-2 mb-2">
+                  <Badge variant="outline" className="rounded-full bg-white/50 text-neutral-400 border-black/5 text-[8px] uppercase tracking-tighter">Proceso Gemini</Badge>
+                  {selectedImage.isFeatured && <Badge variant="default" className="rounded-full bg-black text-white text-[8px] uppercase tracking-tighter">Destacado</Badge>}
+                </div>
+
+                <p className="text-sm md:text-xl text-black font-serif italic leading-relaxed tracking-tight px-4">
+                  "{selectedImage.prompt}"
+                </p>
+
+                <div className="flex items-center justify-center gap-8 pt-4">
+                  <button onClick={() => setIsEditing(true)} className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] font-bold text-neutral-400 hover:text-black transition-colors">
+                    <Maximize2 size={14} /> Detalle
+                  </button>
+                  <button onClick={() => onVariation(selectedImage)} className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] font-bold text-neutral-400 hover:text-black transition-colors">
+                    <Sparkles size={14} /> Refinar
+                  </button>
+                  <button onClick={onClose} className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] font-bold text-neutral-300 hover:text-red-400 transition-colors">
+                    <X size={14} /> Descartar
+                  </button>
+                </div>
               </div>
             </div>
           </motion.div>
@@ -72,102 +106,51 @@ export function MainPreview({ selectedImage, onClose, aspectRatio }: MainPreview
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="text-center space-y-8 max-w-md"
+            className="text-center space-y-12 max-w-md"
           >
-            <div className="relative w-24 h-24 mx-auto">
+            <div className="relative w-32 h-32 mx-auto">
               <motion.div 
                 animate={{ rotate: 360 }}
-                transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-                className="absolute inset-0 border border-neutral-200 rounded-full border-dashed"
+                transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
+                className="absolute inset-0 border border-black/[0.05] rounded-[40px] border-dashed"
               />
               <div className="absolute inset-0 flex items-center justify-center text-neutral-200">
-                <ImageIcon size={32} />
+                <ImageIcon size={40} strokeWidth={1} />
               </div>
             </div>
             <div className="space-y-4">
-              <h2 className="text-4xl font-serif font-light tracking-tight">Crea tu <span className="italic">Obra Maestra</span></h2>
-              <p className="text-neutral-500 text-sm leading-relaxed">Describe tu visión en el panel lateral y Aura Studio la traerá a la vida.</p>
+              <h2 className="text-5xl font-serif font-light tracking-tight text-neutral-900">
+                Tu Visión <br />
+                <span className="italic text-neutral-400">Hecha Arte.</span>
+              </h2>
+              <p className="text-neutral-500 font-sans text-xs tracking-widest uppercase font-bold opacity-60">
+                AURA Studio v2.0 Enterprise
+              </p>
             </div>
-            <div className="flex justify-center gap-6 text-[10px] uppercase tracking-widest text-neutral-400 font-bold">
-              <span className="flex items-center gap-2"><Sun size={12} /> Luz</span>
-              <span className="flex items-center gap-2"><Wind size={12} /> Textura</span>
-              <span className="flex items-center gap-2"><Layers size={12} /> Estilo</span>
+            <div className="flex justify-center gap-10 text-[9px] uppercase tracking-[0.3em] text-neutral-400 font-bold border-t border-black/[0.05] pt-10">
+              <span className="flex flex-col items-center gap-3">
+                <Sun size={14} strokeWidth={1} /> LUZ
+              </span>
+              <span className="flex flex-col items-center gap-3">
+                <Wind size={14} strokeWidth={1} /> TEXTURA
+              </span>
+              <span className="flex flex-col items-center gap-3">
+                <Layers size={14} strokeWidth={1} /> CAPAS
+              </span>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Full Screen Overlay Integration */}
+      {/* Professional Image Editor Modal */}
       <AnimatePresence>
-        {isFullScreen && selectedImage && (
-          <FullScreenView 
+        {isEditing && selectedImage && (
+          <ImageEditor 
             image={selectedImage} 
-            filters={filters} 
-            setFilters={setFilters} 
-            onClose={() => setIsFullScreen(false)} 
+            onClose={() => setIsEditing(false)} 
           />
         )}
       </AnimatePresence>
     </main>
-  );
-}
-
-function FullScreenView({ image, filters, setFilters, onClose }: any) {
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] bg-white/95 backdrop-blur-3xl flex items-center justify-center p-12"
-    >
-      <img 
-        src={image.url} 
-        alt="Full view" 
-        className="max-w-full max-h-full object-contain shadow-2xl"
-        style={{
-          filter: `brightness(${filters.brightness}%) contrast(${filters.contrast}%) saturate(${filters.saturation}%) grayscale(${filters.grayscale}%)`
-        }}
-        referrerPolicy="no-referrer"
-      />
-      
-      <div className="absolute left-6 top-1/2 -translate-y-1/2 flex flex-col gap-8 bg-black/5 p-6 rounded-3xl border border-black/5 hidden md:flex min-w-[220px]">
-        <div className="space-y-2">
-          <div className="flex justify-between items-center text-[10px] uppercase tracking-widest font-bold mb-4">
-            <span className="flex items-center gap-2"><Sliders size={12} /> Post-Producción</span>
-            <button onClick={() => setFilters({ brightness: 100, contrast: 100, saturation: 100, grayscale: 0 })} className="hover:text-black">Reset</button>
-          </div>
-          <div className="space-y-6">
-            <FilterRange label="Brillo" value={filters.brightness} min={50} max={150} onChange={(v) => setFilters((f: any) => ({ ...f, brightness: v }))} />
-            <FilterRange label="Contraste" value={filters.contrast} min={50} max={150} onChange={(v) => setFilters((f: any) => ({ ...f, contrast: v }))} />
-            <FilterRange label="Saturación" value={filters.saturation} min={0} max={200} onChange={(v) => setFilters((f: any) => ({ ...f, saturation: v }))} />
-            <FilterRange label="B/N" value={filters.grayscale} min={0} max={100} onChange={(v) => setFilters((f: any) => ({ ...f, grayscale: v }))} />
-          </div>
-        </div>
-      </div>
-
-      <div className="absolute top-10 right-10 flex gap-4">
-        <button 
-          onClick={onClose}
-          className="p-5 bg-black/5 hover:bg-black text-black hover:text-white rounded-full transition-all border border-black/5"
-        >
-          <Minimize2 size={24} />
-        </button>
-      </div>
-    </motion.div>
-  );
-}
-
-function FilterRange({ label, value, min, max, onChange }: any) {
-  return (
-    <div className="space-y-2">
-      <div className="flex justify-between text-[9px] uppercase font-bold text-neutral-500">
-        <span>{label}</span> <span>{value}%</span>
-      </div>
-      <input 
-        type="range" min={min} max={max} value={value} 
-        onChange={(e) => onChange(parseInt(e.target.value))} 
-        className="w-full h-1 bg-black/10 rounded-full appearance-none accent-black" 
-      />
-    </div>
   );
 }

@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { HistoryProvider } from './contexts/HistoryContext';
+import { CharacterProvider } from './contexts/CharacterContext';
 import { Sidebar } from './components/layout/Sidebar';
 import { MainPreview } from './components/layout/MainPreview';
 import { LoginModal } from './components/auth/LoginModal';
+import { AdminPanel } from './components/admin/AdminPanel';
+import { Toaster } from '@/components/ui/sonner';
 import { useImageGeneration } from './hooks/useImageGeneration';
 import { GeneratedImage } from './types';
 import { Loader2 } from 'lucide-react';
@@ -13,8 +16,9 @@ import { Loader2 } from 'lucide-react';
  * Encapsulated after refactoring for maximum scalability.
  */
 function AuraApp() {
-  const { isLoading } = useAuth();
+  const { isLoading, isAdmin } = useAuth();
   const [selectedImage, setSelectedImage] = useState<GeneratedImage | null>(null);
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
   
   const gen = useImageGeneration();
 
@@ -42,11 +46,21 @@ function AuraApp() {
     }
   };
 
+  const handleVariation = (img: GeneratedImage) => {
+    gen.setReferenceImage(img.url);
+    gen.setPrompt(img.prompt);
+    // Visual cue that we are in variation mode
+  };
+
   return (
     <div className="min-h-screen bg-studio-bg text-neutral-900 font-sans selection:bg-black selection:text-white flex flex-col md:flex-row md:h-screen overflow-x-hidden md:overflow-hidden relative">
       <div className="noise-overlay" />
       
       <LoginModal />
+      
+      {showAdminPanel && isAdmin && (
+        <AdminPanel onClose={() => setShowAdminPanel(false)} />
+      )}
       
       <Sidebar 
         prompt={gen.prompt}
@@ -65,12 +79,17 @@ function AuraApp() {
         onGenerate={handleGenerate}
         onEnhance={gen.handleEnhancePrompt}
         onSelectImage={(img) => setSelectedImage(img)}
+        onOpenAdmin={() => setShowAdminPanel(true)}
+        referenceImage={gen.referenceImage}
+        onClearReference={() => gen.setReferenceImage(null)}
+        setReferenceImage={gen.setReferenceImage}
       />
 
       <MainPreview 
-        selectedImage={selectedImage || (gen.isGenerating ? null : null)} 
+        selectedImage={selectedImage} 
         onClose={() => setSelectedImage(null)}
         aspectRatio={gen.aspectRatio}
+        onVariation={handleVariation}
       />
     </div>
   );
@@ -79,9 +98,12 @@ function AuraApp() {
 export default function App() {
   return (
     <AuthProvider>
-      <HistoryProvider>
-        <AuraApp />
-      </HistoryProvider>
+      <CharacterProvider>
+        <HistoryProvider>
+          <AuraApp />
+          <Toaster position="top-center" expand={true} richColors />
+        </HistoryProvider>
+      </CharacterProvider>
     </AuthProvider>
   );
 }

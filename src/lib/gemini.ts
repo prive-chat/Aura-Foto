@@ -15,6 +15,7 @@ export interface ImageGenerationParams {
   aspectRatio: "1:1" | "3:4" | "4:3" | "9:16" | "16:9";
   style?: string;
   isHighRes?: boolean;
+  referenceImage?: string; // Base64 data:image/...
 }
 
 /**
@@ -51,14 +52,60 @@ Prompt simple: ${simplePrompt}`,
   }
 }
 
+async function urlToBase64(url: string): Promise<{ data: string, mimeType: string }> {
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    const mimeType = blob.type;
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        const data = base64String.split(',')[1];
+        resolve({ data, mimeType });
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch (error) {
+    console.error("Error converting URL to base64:", error);
+    throw new Error("Failed to process reference image from URL");
+  }
+}
+
 export async function generateArtisticPortrait(params: ImageGenerationParams): Promise<string> {
   const realismKeywords = "raw photo, shot on 35mm lens, f/1.8, incredibly detailed skin pores, natural skin texture, masterpiece, 8k uhd, cinematic lighting, hyper-realistic eyes, sharp focus, professional photography, authentic textures, high dynamic range, subsurface scattering";
   
   // Use high-res model if requested
   const modelName = params.isHighRes ? 'gemini-3.1-flash-image-preview' : 'gemini-2.5-flash-image';
   
-  const fullPrompt = `PHOTOGRAPH of ${params.prompt}. (NO drawing, NO illustration, NO 3d render, NO painting, NO digital art). This is a professional raw photography shot. Lighting: ${params.style || 'natural'}. Camera settings: ${realismKeywords}. Ensure authentic human features, natural skin imperfections, and photorealistic depth of field.`;
+  const fullPrompt = `PHOTOGRAPH of ${params.prompt}. (NO drawing, NO illustration, NO 3d render, NO painting, NO digital art). This is a professional raw photography shot. Lighting: ${params.style || 'natural'}. Camera settings: ${realismKeywords}. Ensure authentic human features, natural skin imperfections, and photorealistic depth of field.${params.referenceImage ? " Use the provided image as a strict structural and stylistic reference." : ""}`;
 
+  const contents: any = {
+    parts: [{ text: fullPrompt }]
+  };
+
+  if (params.referenceImage) {
+    if (params.referenceImage.startsWith('http')) {
+      const { data, mimeType } = await urlToBase64(params.referenceImage);
+      contents.parts.push({
+        inlineData: {
+          data: data,
+          mimeType: mimeType
+        }
+      });
+    } else {
+      const [header, data] = params.referenceImage.split(',');
+      const mimeType = header.match(/:(.*?);/)?.[1] || 'image/png';
+      contents.parts.push({
+        inlineData: {
+          data: data,
+          mimeType: mimeType
+        }
+      });
+    }
+  }
+  
   try {
     // For gemini-3.1-flash-image-preview, we should ensure the key is fresh if we were using key selection UI,
     // but here we rely on the injected process.env.GEMINI_API_KEY for simplicity unless we implement the full selection flow.
@@ -67,9 +114,7 @@ export async function generateArtisticPortrait(params: ImageGenerationParams): P
     
     const response = await ai.models.generateContent({
       model: modelName,
-      contents: {
-        parts: [{ text: fullPrompt }]
-      },
+      contents: contents,
       config: {
         imageConfig: {
           aspectRatio: params.aspectRatio,

@@ -3,24 +3,71 @@
 -- Ejecuta este script en el editor SQL de Supabase
 -- ==========================================================
 
--- 1. CREACIÓN DE LA TABLA DE IMÁGENES
+-- 1. CREACIÓN DE TABLAS
+CREATE TABLE IF NOT EXISTS public.profiles (
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    email TEXT,
+    full_name TEXT,
+    avatar_url TEXT,
+    is_super_admin BOOLEAN DEFAULT false,
+    daily_usage_count INTEGER DEFAULT 0,
+    max_daily_limit INTEGER DEFAULT 20,
+    last_usage_reset TIMESTAMPTZ DEFAULT now(),
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS public.images (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     url TEXT NOT NULL,
     prompt TEXT NOT NULL,
+    is_flagged BOOLEAN DEFAULT false,
+    is_featured BOOLEAN DEFAULT false,
+    metadata JSONB DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- 2. ACTIVAR RLS (Row Level Security) EN LA TABLA
+-- 2. ACTIVAR RLS (Row Level Security) EN LAS TABLAS
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.images ENABLE ROW LEVEL SECURITY;
 
--- 3. POLÍTICAS DE SEGURIDAD PARA LA TABLA (Database)
--- Usuarios solo pueden ver sus propias imágenes
+-- 3. POLÍTICAS DE SEGURIDAD
+
+-- Profiles: Los usuarios pueden ver su propio perfil
+CREATE POLICY "Users can view their own profiles"
+ON public.profiles FOR SELECT
+TO authenticated
+USING (auth.uid() = id);
+
+-- Superadmin puede ver TODOS los perfiles
+-- Verificación manual basada en la columna is_super_admin de la tabla profiles
+CREATE POLICY "Superadmin view all profiles"
+ON public.profiles FOR SELECT
+TO authenticated
+USING (
+    EXISTS (
+        SELECT 1 FROM public.profiles
+        WHERE id = auth.uid() AND is_super_admin = true
+    )
+);
+
+-- Images: Usuarios solo pueden ver sus propias imágenes
 CREATE POLICY "Users can view their own images"
 ON public.images FOR SELECT
 TO authenticated
 USING (auth.uid() = user_id);
+
+-- Superadmin puede ver TODAS las imágenes del sistema
+-- Verificación manual basada en la columna is_super_admin de la tabla profiles
+CREATE POLICY "Superadmin Full Access to Images" 
+ON public.images FOR SELECT
+TO authenticated
+USING (
+    EXISTS (
+        SELECT 1 FROM public.profiles
+        WHERE id = auth.uid() AND is_super_admin = true
+    )
+);
 
 -- Usuarios solo pueden insertar sus propias imágenes
 CREATE POLICY "Users can insert their own images"
@@ -67,3 +114,32 @@ USING (
 
 -- Comentario informativo
 COMMENT ON TABLE public.images IS 'Almacena referencias a las obras generadas por los usuarios de Aura.';
+
+-- 6. FUNCIONES Y TRIGGERS DE UTILIDAD
+-- Incrementar el contador de uso diario
+CREATE OR REPLACE FUNCTION public.increment_usage(user_id UUID, inc INTEGER)
+RETURNS void AS $$
+BEGIN
+    UPDATE public.profiles
+    SET daily_usage_count = daily_usage_count + inc
+    WHERE id = user_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 7. BIBLIOTECA DE PERSONAJES
+CREATE TABLE IF NOT EXISTS public.characters (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    base_prompt TEXT NOT NULL,
+    reference_image_url TEXT,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE public.characters ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can manage their own characters"
+ON public.characters FOR ALL
+TO authenticated
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);

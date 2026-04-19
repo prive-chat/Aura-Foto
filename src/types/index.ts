@@ -8,6 +8,8 @@ export interface GeneratedImage {
   prompt: string;
   timestamp: number;
   userId?: string;
+  isFlagged?: boolean;
+  isFeatured?: boolean;
 }
 
 export interface ImageFilters {
@@ -15,6 +17,8 @@ export interface ImageFilters {
   contrast: number;
   saturation: number;
   grayscale: number;
+  sepia: number;
+  blur: number;
 }
 
 export interface AspectRatio {
@@ -37,3 +41,12 @@ export const ARTISTIC_STYLES = [
   'Cyberpunk Estilizado',
   'Vintage 35mm'
 ];
+
+export interface Character {
+  id: string;
+  user_id: string;
+  name: string;
+  base_prompt: string;
+  reference_image_url?: string;
+  created_at: string;
+}

@@ -8,9 +8,11 @@ import { toast } from 'sonner';
 
 interface GalleryGridProps {
   onSelectImage: (img: GeneratedImage) => void;
+  onOpenGallery?: () => void;
+  onOpenLightbox?: (img: GeneratedImage) => void;
 }
 
-export function GalleryGrid({ onSelectImage }: GalleryGridProps) {
+export function GalleryGrid({ onSelectImage, onOpenGallery, onOpenLightbox }: GalleryGridProps) {
   const { history, clearHistory, deleteImage, loadMore, hasMore, isLoading } = useHistory();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const loaderRef = useRef<HTMLDivElement>(null);
@@ -69,16 +71,28 @@ export function GalleryGrid({ onSelectImage }: GalleryGridProps) {
         <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold flex items-center gap-2">
           Galería del Estudio
         </label>
-        {history.length > 0 && (
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={clearHistory}
-            className="h-7 px-2 text-[9px] uppercase tracking-widest text-neutral-400 hover:text-red-500 transition-colors gap-1"
-          >
-            <Trash2 size={10} /> Borrar Todo
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {onOpenGallery && (
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={onOpenGallery}
+              className="h-7 px-2 text-[9px] uppercase tracking-widest text-neutral-400 hover:text-black transition-colors gap-1"
+            >
+              <Maximize2 size={10} /> Expandir
+            </Button>
+          )}
+          {history.length > 0 && (
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={clearHistory}
+              className="h-7 px-2 text-[9px] uppercase tracking-widest text-neutral-400 hover:text-red-500 transition-colors gap-1"
+            >
+              <Trash2 size={10} /> Borrar Todo
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-3">
@@ -142,7 +156,11 @@ export function GalleryGrid({ onSelectImage }: GalleryGridProps) {
                       className="w-8 h-8 rounded-full bg-white/20 hover:bg-white text-white hover:text-black transition-all shadow-lg"
                       onClick={(e) => { 
                         e.stopPropagation(); 
-                        onSelectImage(img); 
+                        if (onOpenLightbox) {
+                          onOpenLightbox(img);
+                        } else {
+                          onSelectImage(img);
+                        }
                       }}
                     >
                       <Maximize2 size={14} />

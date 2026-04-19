@@ -107,6 +107,8 @@ export function useImageGeneration() {
     } catch (err: any) {
       if (err?.message?.includes('429') || err?.status === 'RESOURCE_EXHAUSTED' || JSON.stringify(err).includes('429')) {
         setError('Cuota de IA excedida. Por favor, espera un minuto o reduce la "Cantidad" de imágenes a 1.');
+      } else if (err?.message) {
+        setError(err.message);
       } else {
         setError('Error al generar la imagen. Verifica tu conexión.');
       }

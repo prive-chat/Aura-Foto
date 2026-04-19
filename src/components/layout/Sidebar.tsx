@@ -32,6 +32,8 @@ interface SidebarProps {
   referenceImage?: string | null;
   onClearReference?: () => void;
   setReferenceImage?: (v: string | null) => void;
+  onOpenGallery?: () => void;
+  onOpenLightbox?: (img: GeneratedImage) => void;
 }
 
 export function Sidebar(props: SidebarProps) {
@@ -129,7 +131,11 @@ export function Sidebar(props: SidebarProps) {
           <Separator className="bg-black/5" />
 
           <div className="pb-10">
-            <GalleryGrid onSelectImage={props.onSelectImage} />
+            <GalleryGrid 
+              onSelectImage={props.onSelectImage} 
+              onOpenGallery={props.onOpenGallery}
+              onOpenLightbox={props.onOpenLightbox}
+            />
           </div>
         </div>
       </ScrollArea>

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { HistoryProvider } from './contexts/HistoryContext';
 import { CharacterProvider } from './contexts/CharacterContext';
@@ -6,6 +7,8 @@ import { Sidebar } from './components/layout/Sidebar';
 import { MainPreview } from './components/layout/MainPreview';
 import { LoginModal } from './components/auth/LoginModal';
 import { AdminPanel } from './components/admin/AdminPanel';
+import { FullScreenGallery } from './components/layout/FullScreenGallery';
+import { ImageLightbox } from './components/layout/ImageLightbox';
 import { Toaster } from '@/components/ui/sonner';
 import { useImageGeneration } from './hooks/useImageGeneration';
 import { GeneratedImage } from './types';
@@ -18,7 +21,9 @@ import { Loader2 } from 'lucide-react';
 function AuraApp() {
   const { isLoading, isAdmin } = useAuth();
   const [selectedImage, setSelectedImage] = useState<GeneratedImage | null>(null);
+  const [lightboxImage, setLightboxImage] = useState<GeneratedImage | null>(null);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [showGallery, setShowGallery] = useState(false);
   
   const gen = useImageGeneration();
 
@@ -58,6 +63,28 @@ function AuraApp() {
       
       <LoginModal />
       
+      <AnimatePresence>
+        {showGallery && (
+          <FullScreenGallery 
+            onClose={() => setShowGallery(false)}
+            onSelectImage={(img) => {
+              setSelectedImage(img);
+              setShowGallery(false);
+            }}
+            onOpenLightbox={setLightboxImage}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {lightboxImage && (
+          <ImageLightbox 
+            image={lightboxImage} 
+            onClose={() => setLightboxImage(null)} 
+          />
+        )}
+      </AnimatePresence>
+      
       {showAdminPanel && isAdmin && (
         <AdminPanel onClose={() => setShowAdminPanel(false)} />
       )}
@@ -79,10 +106,12 @@ function AuraApp() {
         onGenerate={handleGenerate}
         onEnhance={gen.handleEnhancePrompt}
         onSelectImage={(img) => setSelectedImage(img)}
+        onOpenLightbox={setLightboxImage}
         onOpenAdmin={() => setShowAdminPanel(true)}
         referenceImage={gen.referenceImage}
         onClearReference={() => gen.setReferenceImage(null)}
         setReferenceImage={gen.setReferenceImage}
+        onOpenGallery={() => setShowGallery(true)}
       />
 
       <MainPreview 

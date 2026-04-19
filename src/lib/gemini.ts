@@ -107,11 +107,6 @@ export async function generateArtisticPortrait(params: ImageGenerationParams): P
   }
   
   try {
-    // For gemini-3.1-flash-image-preview, we should ensure the key is fresh if we were using key selection UI,
-    // but here we rely on the injected process.env.GEMINI_API_KEY for simplicity unless we implement the full selection flow.
-    // However, the skill says we MUST use selection for 3.1. 
-    // I'll stick to 2.5 for now to keep it "all in one" unless high-res is manually selected and we check for the key.
-    
     const response = await ai.models.generateContent({
       model: modelName,
       contents: contents,
@@ -119,7 +114,6 @@ export async function generateArtisticPortrait(params: ImageGenerationParams): P
         imageConfig: {
           aspectRatio: params.aspectRatio,
         },
-        // Configuración de seguridad mínima permitida para máxima libertad creativa
         safetySettings: [
           {
             category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
@@ -141,11 +135,30 @@ export async function generateArtisticPortrait(params: ImageGenerationParams): P
       },
     });
 
-    if (response.candidates && response.candidates[0]?.content?.parts) {
-      for (const part of response.candidates[0].content.parts) {
+    if (!response.candidates || response.candidates.length === 0) {
+      throw new Error("El modelo de IA fue bloqueado o no pudo generar candidatos. Intenta con un prompt diferente.");
+    }
+
+    const candidate = response.candidates[0];
+    
+    // Check if safety filters blocked the response
+    if (candidate.finishReason === 'SAFETY') {
+      throw new Error("La generación fue bloqueada por filtros de seguridad. El prompt podría ser demasiado sensible o explícito.");
+    }
+
+    if (candidate.content?.parts) {
+      let rejectionText = "";
+      for (const part of candidate.content.parts) {
         if (part.inlineData) {
           return `data:image/png;base64,${part.inlineData.data}`;
         }
+        if (part.text) {
+          rejectionText += part.text;
+        }
+      }
+      
+      if (rejectionText) {
+        throw new Error(`El modelo no devolvió una imagen, pero respondió: "${rejectionText.substring(0, 100)}..."`);
       }
     }
     

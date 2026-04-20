@@ -42,7 +42,7 @@ export function Sidebar(props: SidebarProps) {
   const { canInstall, install } = usePWA();
 
   return (
-    <aside className="order-2 md:order-1 w-full md:w-[420px] glass-panel h-[100dvh] flex flex-col shrink-0 z-40 border-r border-black/5">
+    <aside className="w-full md:w-[420px] glass-panel h-full flex flex-col shrink-0 z-40 border-r border-black/5 overflow-hidden">
       {/* Header */}
       <div className="p-8 pb-4 flex items-center justify-between">
         <h1 className="text-3xl font-serif font-light tracking-wide flex items-center gap-2">

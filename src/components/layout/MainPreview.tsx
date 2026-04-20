@@ -28,14 +28,15 @@ export function MainPreview({ selectedImage, onClose, aspectRatio, onVariation }
   const [isEditing, setIsEditing] = useState(false);
 
   return (
-    <main className="order-1 md:order-2 flex-1 bg-studio-bg flex items-center justify-center p-4 md:p-12 relative min-h-[50vh] md:min-h-0 overflow-hidden">
+    <main className="flex-1 bg-studio-bg flex flex-col items-center p-4 md:p-12 relative min-h-0 h-full overflow-y-auto">
       {/* Background Ambient Glow */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <div className="absolute top-[20%] left-[30%] w-[60vw] h-[60vw] md:w-[40vw] md:h-[40vw] bg-black/[0.03] rounded-full blur-[80px] md:blur-[120px]" />
         <div className="absolute bottom-[20%] right-[30%] w-[60vw] h-[60vw] md:w-[40vw] md:h-[40vw] bg-black/[0.03] rounded-full blur-[80px] md:blur-[120px]" />
       </div>
 
-      <AnimatePresence mode="wait">
+      <div className="w-full flex-1 flex flex-col items-center justify-center relative z-10 py-8">
+        <AnimatePresence mode="wait">
         {selectedImage ? (
           <motion.div
             key={selectedImage.id}
@@ -141,8 +142,9 @@ export function MainPreview({ selectedImage, onClose, aspectRatio, onVariation }
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
 
-      {/* Professional Image Editor Modal */}
+    {/* Professional Image Editor Modal */}
       <AnimatePresence>
         {isEditing && selectedImage && (
           <ImageEditor 

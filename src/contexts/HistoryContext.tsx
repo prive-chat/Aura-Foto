@@ -23,18 +23,23 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const { user } = useAuth();
 
   const PAGE_SIZE = 24;
 
   const fetchHistory = async (pageToLoad: number) => {
-    if (!user) return;
+    if (!user) {
+      console.log("No user in fetchHistory, bypassing Supabase fetch");
+      return;
+    }
     
     setIsLoading(true);
     try {
       const from = pageToLoad * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
 
+      console.log(`Fetching images for user: ${user.id}, range: ${from}-${to}`);
       const { data, error } = await supabase
         .from('images')
         .select('*')
@@ -42,7 +47,14 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
         .order('created_at', { ascending: false })
         .range(from, to);
       
-      if (data && !error) {
+      if (error) {
+        console.error("Supabase fetch error:", error);
+        setIsLoading(false); // Immediate error update
+        return;
+      }
+
+      if (data) {
+        console.log(`Fetched ${data.length} images`);
         const mapped = data.map(img => ({
           id: img.id,
           url: img.url,
@@ -53,11 +65,13 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
           isFlagged: img.is_flagged
         }));
 
-        if (pageToLoad === 0) {
-          setHistory(mapped);
-        } else {
-          setHistory(prev => [...prev, ...mapped]);
-        }
+        setHistory(prev => {
+          if (pageToLoad === 0) return mapped;
+          // De-duplicate on pagination load
+          const existingIds = new Set(prev.map(img => img.id));
+          const filtered = mapped.filter(img => !existingIds.has(img.id));
+          return [...prev, ...filtered];
+        });
         
         setHasMore(data.length === PAGE_SIZE);
       }
@@ -69,7 +83,11 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    // Evitar reset total si el ID de usuario no ha cambiado realmente
+    if (user?.id === currentUserId && user) return;
+
     if (!user) {
+      setCurrentUserId(null);
       const localData = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (localData) {
         try {
@@ -83,6 +101,8 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    setCurrentUserId(user.id);
+    setHistory([]); // Solo limpiamos al cambiar de usuario o login inicial
     setPage(0);
     fetchHistory(0);
 
@@ -150,7 +170,11 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
   }, [history, user]);
 
   const addImages = (newImages: GeneratedImage[]) => {
-    setHistory(prev => [...newImages, ...prev]);
+    setHistory(prev => {
+      const existingIds = new Set(prev.map(img => img.id));
+      const uniqueNew = newImages.filter(img => !existingIds.has(img.id));
+      return [...uniqueNew, ...prev];
+    });
   };
 
   const deleteImage = async (id: string, url: string) => {
@@ -159,7 +183,8 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
 
     try {
       // 1. Delete from DB
-      await supabase.from('images').delete().eq('id', id);
+      const { error: dbError } = await supabase.from('images').delete().eq('id', id);
+      if (dbError) throw dbError;
 
       // 2. Delete from storage if it's a supabase URL
       if (url.includes('supabase.co')) {
@@ -167,7 +192,8 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
         const parts = url.split(`${bucketName}/`);
         if (parts.length > 1) {
           const fullPath = parts[1];
-          await supabase.storage.from(bucketName).remove([fullPath]);
+          const { error: stError } = await supabase.storage.from(bucketName).remove([fullPath]);
+          if (stError) console.warn("Storage delete failed (non-critical):", stError);
         }
       }
     } catch (error) {
@@ -188,6 +214,7 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
       history, 
       setHistory, 
       addImages, 
+      deleteImage,
       clearHistory, 
       loadMore, 
       isLoading, 

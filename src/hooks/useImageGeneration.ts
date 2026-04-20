@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
 import { useHistory } from '../contexts/HistoryContext';
 import { generateArtisticPortrait, enhancePrompt } from '../lib/gemini';
@@ -103,6 +104,7 @@ export function useImageGeneration() {
               dbId = dbData.id;
             } else {
               console.error("Error saving image to DB:", dbError);
+              toast.error("Error al persistir en la galería remota");
             }
           } catch (err) {
             console.error("Cloud persist error:", err);

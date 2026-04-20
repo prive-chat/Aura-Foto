@@ -40,34 +40,25 @@ TO authenticated
 USING (auth.uid() = id);
 
 -- Superadmin puede ver TODOS los perfiles
--- Verificación manual basada en la columna is_super_admin de la tabla profiles
+-- Usar una función para evitar recursión RLS
+CREATE OR REPLACE FUNCTION is_admin() 
+RETURNS BOOLEAN AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles 
+    WHERE id = auth.uid() AND is_super_admin = true
+  );
+$$ LANGUAGE sql SECURITY DEFINER;
+
 CREATE POLICY "Superadmin view all profiles"
 ON public.profiles FOR SELECT
 TO authenticated
-USING (
-    EXISTS (
-        SELECT 1 FROM public.profiles
-        WHERE id = auth.uid() AND is_super_admin = true
-    )
-);
+USING (is_admin());
 
 -- Images: Usuarios solo pueden ver sus propias imágenes
 CREATE POLICY "Users can view their own images"
 ON public.images FOR SELECT
 TO authenticated
-USING (auth.uid() = user_id);
-
--- Superadmin puede ver TODAS las imágenes del sistema
--- Verificación manual basada en la columna is_super_admin de la tabla profiles
-CREATE POLICY "Superadmin Full Access to Images" 
-ON public.images FOR SELECT
-TO authenticated
-USING (
-    EXISTS (
-        SELECT 1 FROM public.profiles
-        WHERE id = auth.uid() AND is_super_admin = true
-    )
-);
+USING (auth.uid() = user_id OR is_admin());
 
 -- Usuarios solo pueden insertar sus propias imágenes
 CREATE POLICY "Users can insert their own images"
@@ -79,7 +70,14 @@ WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can delete their own images"
 ON public.images FOR DELETE
 TO authenticated
-USING (auth.uid() = user_id);
+USING (auth.uid() = user_id OR is_admin());
+
+-- Superadmin puede actualizar imágenes (flag/feature)
+CREATE POLICY "Superadmin can update images"
+ON public.images FOR UPDATE
+TO authenticated
+USING (is_admin())
+WITH CHECK (is_admin());
 
 -- 4. CONFIGURACIÓN DE STORAGE (Buckets)
 -- Insertar el bucket 'images' si no existe

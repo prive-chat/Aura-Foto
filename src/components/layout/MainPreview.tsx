@@ -28,7 +28,7 @@ export function MainPreview({ selectedImage, onClose, aspectRatio, onVariation }
   const [isEditing, setIsEditing] = useState(false);
 
   return (
-    <main className="flex-1 bg-studio-bg flex flex-col items-center p-4 md:p-12 relative min-h-0 h-full overflow-y-auto">
+    <main className="flex-1 bg-studio-bg flex flex-col items-center p-4 md:p-12 relative min-h-0 h-full overflow-y-auto custom-scrollbar">
       {/* Background Ambient Glow */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <div className="absolute top-[20%] left-[30%] w-[60vw] h-[60vw] md:w-[40vw] md:h-[40vw] bg-black/[0.03] rounded-full blur-[80px] md:blur-[120px]" />

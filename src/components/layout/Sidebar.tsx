@@ -42,9 +42,9 @@ export function Sidebar(props: SidebarProps) {
   const { canInstall, install } = usePWA();
 
   return (
-    <aside className="w-full md:w-[420px] glass-panel h-full flex flex-col shrink-0 z-40 border-r border-black/5 overflow-hidden">
-      {/* Header */}
-      <div className="p-8 pb-4 flex items-center justify-between">
+    <aside className="w-full md:w-[420px] bg-studio-bg/80 backdrop-blur-3xl h-full flex flex-col shrink-0 z-40 border-r border-black/5 relative overflow-hidden">
+      {/* Header - Fixed height if we want just content to scroll */}
+      <div className="p-8 pb-4 flex items-center justify-between shrink-0">
         <h1 className="text-3xl font-serif font-light tracking-wide flex items-center gap-2">
           AURA <span className="text-neutral-500 font-sans text-[10px] tracking-[0.4em] uppercase font-bold">Studio</span>
         </h1>
@@ -80,7 +80,8 @@ export function Sidebar(props: SidebarProps) {
         </div>
       </div>
 
-      <ScrollArea className="flex-1 px-8">
+      {/* Scrolleable Content Section */}
+      <div className="flex-1 overflow-y-auto px-8 custom-scrollbar min-h-0">
         <div className="py-6 space-y-10">
           <PromptSection 
             prompt={props.prompt}
@@ -150,7 +151,7 @@ export function Sidebar(props: SidebarProps) {
             />
           </div>
         </div>
-      </ScrollArea>
+      </div>
     </aside>
   );
 }

@@ -9,26 +9,37 @@ import {
   Grid3X3, 
   Search,
   Calendar,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Layers
 } from 'lucide-react';
 import { useHistory } from '../../contexts/HistoryContext';
 import { Button } from '@/components/ui/button';
 import { GeneratedImage } from '../../types';
 import { toast } from 'sonner';
+import { SmartImage } from '../ui/SmartImage';
 
 interface FullScreenGalleryProps {
   onClose: () => void;
   onSelectImage: (img: GeneratedImage) => void;
   onOpenLightbox?: (img: GeneratedImage) => void;
+  onVariation?: (img: GeneratedImage) => void;
 }
 
-export function FullScreenGallery({ onClose, onSelectImage, onOpenLightbox }: FullScreenGalleryProps) {
+export function FullScreenGallery({ onClose, onSelectImage, onOpenLightbox, onVariation }: FullScreenGalleryProps) {
   const { history, deleteImage, isLoading } = useHistory();
   const [searchTerm, setSearchTerm] = React.useState('');
 
   const filteredHistory = history.filter(img => 
     img.prompt.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (confirm('¿Eliminar esta obra permanentemente?')) {
+      await deleteImage(id);
+      toast.success("Imagen eliminada");
+    }
+  };
 
   const handleDownload = async (e: React.MouseEvent, img: GeneratedImage) => {
     e.stopPropagation();
@@ -123,11 +134,12 @@ export function FullScreenGallery({ onClose, onSelectImage, onOpenLightbox }: Fu
                   }}
                 >
                   <div className="flex-1 overflow-hidden relative">
-                    <img 
+                    <SmartImage 
                       src={img.url} 
-                      alt="Thumbnail" 
-                      className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
-                      referrerPolicy="no-referrer"
+                      alt={img.prompt} 
+                      aspectRatio="3:2" // We'll force 3:2 for mosaic consistency
+                      containerClassName="w-full h-full"
+                      className="transition-transform duration-1000 group-hover:scale-110"
                     />
                     
                     {/* Hover Actions */}
@@ -135,7 +147,8 @@ export function FullScreenGallery({ onClose, onSelectImage, onOpenLightbox }: Fu
                        <Button
                         size="icon"
                         variant="ghost"
-                        className="w-10 h-10 rounded-full bg-white/20 hover:bg-white text-white hover:text-black transition-all shadow-lg backdrop-blur-sm"
+                        title="Ver en detalle"
+                        className="w-10 h-10 rounded-full bg-white/10 hover:bg-white text-white hover:text-black transition-all shadow-lg backdrop-blur-sm"
                         onClick={(e) => { 
                           e.stopPropagation(); 
                           if (onOpenLightbox) {
@@ -148,13 +161,42 @@ export function FullScreenGallery({ onClose, onSelectImage, onOpenLightbox }: Fu
                       >
                         <Maximize2 size={18} />
                       </Button>
+                      
+                      {onVariation && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          title="Crear variación"
+                          className="w-10 h-10 rounded-full bg-white/10 hover:bg-white text-white hover:text-black transition-all shadow-lg backdrop-blur-sm border border-white/20"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onVariation(img);
+                            onClose();
+                            toast.info("Imagen cargada como referencia para variación");
+                          }}
+                        >
+                          <Layers size={18} />
+                        </Button>
+                      )}
+
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="w-10 h-10 rounded-full bg-white/20 hover:bg-white text-white hover:text-black transition-all shadow-lg backdrop-blur-sm"
+                        title="Descargar"
+                        className="w-10 h-10 rounded-full bg-white/10 hover:bg-white text-white hover:text-black transition-all shadow-lg backdrop-blur-sm"
                         onClick={(e) => handleDownload(e, img)}
                       >
                         <Download size={18} />
+                      </Button>
+
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        title="Eliminar"
+                        className="w-10 h-10 rounded-full bg-white/10 hover:bg-red-500 text-white transition-all shadow-lg backdrop-blur-sm"
+                        onClick={(e) => handleDelete(e, img.id)}
+                      >
+                        <Trash2 size={18} />
                       </Button>
                     </div>
                   </div>

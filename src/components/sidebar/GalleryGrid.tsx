@@ -5,6 +5,7 @@ import { useHistory } from '../../contexts/HistoryContext';
 import { GeneratedImage } from '../../types';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { SmartImage } from '../ui/SmartImage';
 
 interface GalleryGridProps {
   onSelectImage: (img: GeneratedImage) => void;
@@ -127,12 +128,12 @@ export function GalleryGrid({ onSelectImage, onOpenGallery, onOpenLightbox }: Ga
                 onClick={() => onSelectImage(img)}
                 className="aspect-square rounded-xl overflow-hidden border border-black/5 bg-black/[0.01] flex items-center justify-center relative group active:scale-95 transition-transform cursor-pointer"
               >
-                <img 
+                <SmartImage 
                   src={img.url} 
                   alt="Thumbnail" 
-                  className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110" 
-                  referrerPolicy="no-referrer"
-                  loading="lazy"
+                  className="transition-all duration-700 group-hover:scale-110" 
+                  aspectRatio="1:1"
+                  showLoading={false}
                 />
                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col items-center justify-center p-2 text-center">
                   {deletingId === img.id ? (

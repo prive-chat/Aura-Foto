@@ -79,7 +79,8 @@ export async function generateArtisticPortrait(params: ImageGenerationParams): P
   // Use high-res model if requested
   const modelName = params.isHighRes ? 'gemini-3.1-flash-image-preview' : 'gemini-2.5-flash-image';
   
-  const fullPrompt = `PHOTOGRAPH of ${params.prompt}. (NO drawing, NO illustration, NO 3d render, NO painting, NO digital art). This is a professional raw photography shot. Lighting: ${params.style || 'natural'}. Camera settings: ${realismKeywords}. Ensure authentic human features, natural skin imperfections, and photorealistic depth of field.${params.referenceImage ? " Use the provided image as a strict structural and stylistic reference." : ""}`;
+  // Simplified and more direct prompt for the image generation model
+  const fullPrompt = `${params.prompt}. Professional raw photography, ${params.style || 'natural'} lighting, ${realismKeywords}. Authentic human features, photorealism.${params.referenceImage ? " Strictly follow the structural reference from the provided image." : ""}`;
 
   const contents: any = {
     parts: [{ text: fullPrompt }]
@@ -95,14 +96,18 @@ export async function generateArtisticPortrait(params: ImageGenerationParams): P
         }
       });
     } else {
-      const [header, data] = params.referenceImage.split(',');
-      const mimeType = header.match(/:(.*?);/)?.[1] || 'image/png';
-      contents.parts.push({
-        inlineData: {
-          data: data,
-          mimeType: mimeType
-        }
-      });
+      const parts = params.referenceImage.split(',');
+      if (parts.length > 1) {
+        const header = parts[0];
+        const data = parts[1];
+        const mimeType = header.match(/:(.*?);/)?.[1] || 'image/png';
+        contents.parts.push({
+          inlineData: {
+            data: data,
+            mimeType: mimeType
+          }
+        });
+      }
     }
   }
   
@@ -113,6 +118,7 @@ export async function generateArtisticPortrait(params: ImageGenerationParams): P
       config: {
         imageConfig: {
           aspectRatio: params.aspectRatio,
+          imageSize: "1K"
         },
         safetySettings: [
           {
@@ -136,14 +142,14 @@ export async function generateArtisticPortrait(params: ImageGenerationParams): P
     });
 
     if (!response.candidates || response.candidates.length === 0) {
-      throw new Error("El modelo de IA fue bloqueado o no pudo generar candidatos. Intenta con un prompt diferente.");
+      throw new Error("El modelo de IA no pudo generar candidatos. Intenta con un prompt diferente.");
     }
 
     const candidate = response.candidates[0];
     
     // Check if safety filters blocked the response
     if (candidate.finishReason === 'SAFETY') {
-      throw new Error("La generación fue bloqueada por filtros de seguridad. El prompt podría ser demasiado sensible o explícito.");
+      throw new Error("La generación fue bloqueada por filtros de seguridad. El prompt podría ser demasiado sensible.");
     }
 
     if (candidate.content?.parts) {
@@ -157,14 +163,18 @@ export async function generateArtisticPortrait(params: ImageGenerationParams): P
         }
       }
       
-      if (rejectionText) {
-        throw new Error(`El modelo no devolvió una imagen, pero respondió: "${rejectionText.substring(0, 100)}..."`);
+      if (rejectionText.trim()) {
+        throw new Error(`El modelo no devolvió una imagen poque: "${rejectionText.substring(0, 150)}..."`);
       }
     }
     
-    throw new Error("No image data returned from model");
-  } catch (error) {
+    throw new Error("No image data returned from model. Try a different prompt or simpler style.");
+  } catch (error: any) {
     console.error("Error generating image:", error);
+    // Propagate more helpful errors
+    if (error.message?.includes('SAFETY')) {
+      throw new Error("La IA bloqueó el prompt por seguridad. Intenta algo menos descriptivo o sensible.");
+    }
     throw error;
   }
 }

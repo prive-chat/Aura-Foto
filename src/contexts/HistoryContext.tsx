@@ -86,19 +86,17 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
 
   const syncOrphanedImages = async (userId: string) => {
     try {
-      console.log("🚀 Iniciando escaneo de obras huérfanas en Storage...");
-      // 1. Listar archivos físicamente en el storage
+      console.log("🚀 [Definitive Sync] Escaneando archivos huérfanos...");
+      
+      // 1. Listar archivos físicos
       const { data: files, error: listError } = await supabase.storage
         .from('images')
         .list(userId, { limit: 100, sortBy: { column: 'created_at', order: 'desc' } });
 
-      if (listError) {
-        console.warn("No se pudo listar el storage (puede ser normal si no hay carpeta):", listError);
-        return;
-      }
+      if (listError) return;
       if (!files || files.length === 0) return;
 
-      // 2. Obtener imágenes que YA están en la base de datos
+      // 2. Obtener URLs de la DB para extraer nombres de archivo
       const { data: dbImages, error: dbError } = await supabase
         .from('images')
         .select('url')
@@ -106,44 +104,54 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
 
       if (dbError) throw dbError;
 
-      const existingUrls = new Set(dbImages?.map(img => img.url) || []);
+      // Extraer nombres de archivo de las URLs guardadas (ej: 12345.png)
+      const existingFilenames = new Set();
+      dbImages?.forEach(img => {
+        const parts = img.url.split('/');
+        const filename = parts[parts.length - 1];
+        if (filename) existingFilenames.add(filename);
+      });
       
       const missingRecords = files
         .filter(file => file.name !== '.emptyFolderPlaceholder')
-        .map(file => {
-          const { data: { publicUrl } } = supabase.storage
-            .from('images')
-            .getPublicUrl(`${userId}/${file.name}`);
-          return { file, publicUrl };
-        })
-        .filter(item => !existingUrls.has(item.publicUrl));
+        .filter(file => !existingFilenames.has(file.name));
 
       if (missingRecords.length === 0) {
-        console.log("✅ Galería está al día. No hay obras huérfanas.");
+        console.log("✅ Galería sincronizada permanentemente.");
         return;
       }
 
-      console.log(`🛠️ Recuperando ${missingRecords.length} obras retroactivamente...`);
+      console.log(`🛠️ Recuperando ${missingRecords.length} obras huerfanas encontradas...`);
+      // toast.info(`Sincronizando ${missingRecords.length} obras antiguas...`);
 
       // 3. Insertar registros faltantes
-      const toInsert = missingRecords.map(item => ({
-        user_id: userId,
-        url: item.publicUrl,
-        prompt: "Obra recuperada del Studio",
-        created_at: item.file.created_at
-      }));
+      const toInsert = missingRecords.map(file => {
+        const { data: { publicUrl } } = supabase.storage
+          .from('images')
+          .getPublicUrl(`${userId}/${file.name}`);
+        
+        return {
+          user_id: userId,
+          url: publicUrl,
+          prompt: "Obra recuperada de sesión anterior",
+          created_at: file.created_at
+        };
+      });
 
       const { error: insertError } = await supabase.from('images').insert(toInsert);
       
       if (insertError) {
-        console.error("Error al re-insertar registros:", insertError);
+        console.error("Error definitivo de inserción:", insertError);
         return;
       }
 
-      console.log(`✨ Sincronización completa. ${toInsert.length} obras rescatadas.`);
-      fetchHistory(0); // Refrescar para mostrar lo recuperado
+      console.log(`✨ Éxito: ${toInsert.length} obras sincronizadas permanentemente.`);
+      // toast.success("Galería restaurada con éxito");
+      
+      // Forzar recarga de los primeros elementos
+      await fetchHistory(0);
     } catch (err) {
-      console.error("Error en sincronización retroactiva:", err);
+      console.error("Falla crítica en sincronización retroactiva:", err);
     }
   };
 

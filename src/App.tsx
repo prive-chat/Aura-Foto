@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { HistoryProvider } from './contexts/HistoryContext';
 import { CharacterProvider } from './contexts/CharacterContext';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Sidebar } from './components/layout/Sidebar';
 import { MainPreview } from './components/layout/MainPreview';
 import { LoginModal } from './components/auth/LoginModal';
@@ -72,6 +73,7 @@ function AuraApp() {
               setShowGallery(false);
             }}
             onOpenLightbox={setLightboxImage}
+            onVariation={handleVariation}
           />
         )}
       </AnimatePresence>
@@ -126,13 +128,15 @@ function AuraApp() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <CharacterProvider>
-        <HistoryProvider>
-          <AuraApp />
-          <Toaster position="top-center" expand={true} richColors />
-        </HistoryProvider>
-      </CharacterProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <CharacterProvider>
+          <HistoryProvider>
+            <AuraApp />
+            <Toaster position="top-center" expand={true} richColors />
+          </HistoryProvider>
+        </CharacterProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }

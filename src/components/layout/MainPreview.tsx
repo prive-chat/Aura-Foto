@@ -16,6 +16,7 @@ import { GeneratedImage } from '../../types';
 import { ImageEditor } from './ImageEditor';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { SmartImage } from '../ui/SmartImage';
 
 interface MainPreviewProps {
   selectedImage: GeneratedImage | null;
@@ -54,11 +55,12 @@ export function MainPreview({ selectedImage, onClose, aspectRatio, onVariation }
                   maxHeight: '70vh'
                 }}
               >
-                <img 
+                <SmartImage 
                   src={selectedImage.url} 
-                  alt="Preview"
+                  alt={selectedImage.prompt}
                   className="w-full h-full object-contain"
-                  referrerPolicy="no-referrer"
+                  aspectRatio={aspectRatio as any}
+                  priority
                 />
 
                 {/* Quick Actions Overlay */}

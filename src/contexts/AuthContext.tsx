@@ -57,7 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               id: u.id, 
               email: u.email,
               full_name: u.user_metadata?.full_name || u.email?.split('@')[0],
-              max_daily_limit: 20
+              max_daily_limit: 50 // Sincronizado con SQL Master 2.1
             }
           ])
           .select()

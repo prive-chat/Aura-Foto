@@ -66,11 +66,13 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
         }));
 
         setHistory(prev => {
-          if (pageToLoad === 0) return mapped;
-          // De-duplicate on pagination load
+          const freshMapped = mapped;
+          if (pageToLoad === 0) return freshMapped;
+          
+          // De-duplicate: filter out any images in freshMapped that already exist in prev
           const existingIds = new Set(prev.map(img => img.id));
-          const filtered = mapped.filter(img => !existingIds.has(img.id));
-          return [...prev, ...filtered];
+          const newUnique = freshMapped.filter(img => !existingIds.has(img.id));
+          return [...prev, ...newUnique];
         });
         
         setHasMore(data.length === PAGE_SIZE);
@@ -79,6 +81,69 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
       console.error("Error loading history:", err);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const syncOrphanedImages = async (userId: string) => {
+    try {
+      console.log("🚀 Iniciando escaneo de obras huérfanas en Storage...");
+      // 1. Listar archivos físicamente en el storage
+      const { data: files, error: listError } = await supabase.storage
+        .from('images')
+        .list(userId, { limit: 100, sortBy: { column: 'created_at', order: 'desc' } });
+
+      if (listError) {
+        console.warn("No se pudo listar el storage (puede ser normal si no hay carpeta):", listError);
+        return;
+      }
+      if (!files || files.length === 0) return;
+
+      // 2. Obtener imágenes que YA están en la base de datos
+      const { data: dbImages, error: dbError } = await supabase
+        .from('images')
+        .select('url')
+        .eq('user_id', userId);
+
+      if (dbError) throw dbError;
+
+      const existingUrls = new Set(dbImages?.map(img => img.url) || []);
+      
+      const missingRecords = files
+        .filter(file => file.name !== '.emptyFolderPlaceholder')
+        .map(file => {
+          const { data: { publicUrl } } = supabase.storage
+            .from('images')
+            .getPublicUrl(`${userId}/${file.name}`);
+          return { file, publicUrl };
+        })
+        .filter(item => !existingUrls.has(item.publicUrl));
+
+      if (missingRecords.length === 0) {
+        console.log("✅ Galería está al día. No hay obras huérfanas.");
+        return;
+      }
+
+      console.log(`🛠️ Recuperando ${missingRecords.length} obras retroactivamente...`);
+
+      // 3. Insertar registros faltantes
+      const toInsert = missingRecords.map(item => ({
+        user_id: userId,
+        url: item.publicUrl,
+        prompt: "Obra recuperada del Studio",
+        created_at: item.file.created_at
+      }));
+
+      const { error: insertError } = await supabase.from('images').insert(toInsert);
+      
+      if (insertError) {
+        console.error("Error al re-insertar registros:", insertError);
+        return;
+      }
+
+      console.log(`✨ Sincronización completa. ${toInsert.length} obras rescatadas.`);
+      fetchHistory(0); // Refrescar para mostrar lo recuperado
+    } catch (err) {
+      console.error("Error en sincronización retroactiva:", err);
     }
   };
 
@@ -95,6 +160,8 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
         } catch (e) {
           console.error("Error parsing local history", e);
         }
+      } else {
+        setHistory([]);
       }
       setIsLoading(false);
       setHasMore(false);
@@ -102,9 +169,10 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
     }
 
     setCurrentUserId(user.id);
-    setHistory([]); // Solo limpiamos al cambiar de usuario o login inicial
+    setHistory([]); // Clean start for new user session
     setPage(0);
     fetchHistory(0);
+    syncOrphanedImages(user.id); // Llamada retroactiva al iniciar sesión
 
     // Real-time synchronization
     const channel = supabase
@@ -112,40 +180,31 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*', // Listen for all events (INSERT, DELETE)
           schema: 'public',
           table: 'images',
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
-          const newImg = payload.new;
-          setHistory((prev) => {
-            // Avoid duplicates
-            if (prev.some((img) => img.id === newImg.id)) return prev;
-            
-            const mapped = {
-              id: newImg.id,
-              url: newImg.url,
-              prompt: newImg.prompt,
-              timestamp: new Date(newImg.created_at).getTime(),
-              userId: newImg.user_id,
-              isFeatured: newImg.is_featured,
-              isFlagged: newImg.is_flagged
-            };
-            return [mapped, ...prev];
-          });
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'images',
-          filter: `user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          setHistory((prev) => prev.filter((img) => img.id !== payload.old.id));
+          if (payload.eventType === 'INSERT') {
+            const newImg = payload.new;
+            setHistory((prev) => {
+              if (prev.some((img) => img.id === newImg.id)) return prev;
+              
+              const mapped = {
+                id: newImg.id,
+                url: newImg.url,
+                prompt: newImg.prompt,
+                timestamp: new Date(newImg.created_at).getTime(),
+                userId: newImg.user_id,
+                isFeatured: newImg.is_featured,
+                isFlagged: newImg.is_flagged
+              };
+              return [mapped, ...prev];
+            });
+          } else if (payload.eventType === 'DELETE') {
+            setHistory((prev) => prev.filter((img) => img.id !== payload.old.id));
+          }
         }
       )
       .subscribe();

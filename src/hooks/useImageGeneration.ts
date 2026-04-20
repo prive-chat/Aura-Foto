@@ -86,7 +86,7 @@ export function useImageGeneration() {
 
         if (user) {
           try {
-            // 1. Upload to storage
+            // 1. Upload to storage (Returns public URL)
             cloudUrl = await uploadBase64Image(base64, user.id);
             
             // 2. Persist to database
@@ -100,14 +100,12 @@ export function useImageGeneration() {
               .select()
               .single();
 
-            if (!dbError && dbData) {
-              dbId = dbData.id;
-            } else {
-              console.error("Error saving image to DB:", dbError);
-              toast.error("Error al persistir en la galería remota");
-            }
+            if (dbError) throw dbError;
+            if (dbData) dbId = dbData.id;
+
           } catch (err) {
-            console.error("Cloud persist error:", err);
+            console.error("Cloud sync failed, keeping local-only for now:", err);
+            // Non-blocking error for UI, but log it
           }
         }
 
@@ -120,13 +118,17 @@ export function useImageGeneration() {
         });
       }
 
+      // 3. Update local history context (which might already be updated by real-time subscription)
       addImages(newImages);
       
+      // 4. Update usage quotas via RPC
       if (user) {
-        await supabase.rpc('increment_usage', { user_id: user.id, inc: batchCount });
+        const { error: rpcError } = await supabase.rpc('increment_usage', { user_id: user.id, inc: batchCount });
+        if (rpcError) console.error("Quota update error:", rpcError);
         await refreshProfile();
       }
 
+      toast.success(batchCount > 1 ? `${batchCount} obras esculpidas` : "Obra esculpida con éxito");
       return newImages[0];
     } catch (err: any) {
       if (err?.message?.includes('429') || err?.status === 'RESOURCE_EXHAUSTED' || JSON.stringify(err).includes('429')) {

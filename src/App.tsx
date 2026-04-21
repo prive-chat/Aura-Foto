@@ -85,6 +85,7 @@ function AuraApp() {
           <ImageLightbox 
             image={lightboxImage} 
             onClose={() => setLightboxImage(null)} 
+            onImageChange={setLightboxImage}
           />
         )}
       </AnimatePresence>

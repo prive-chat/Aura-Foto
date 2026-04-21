@@ -29,17 +29,13 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
   const PAGE_SIZE = 24;
 
   const fetchHistory = async (pageToLoad: number) => {
-    if (!user) {
-      console.log("No user in fetchHistory, bypassing Supabase fetch");
-      return;
-    }
+    if (!user) return;
     
     setIsLoading(true);
     try {
       const from = pageToLoad * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
 
-      console.log(`Fetching images for user: ${user.id}, range: ${from}-${to}`);
       const { data, error } = await supabase
         .from('images')
         .select('*')
@@ -48,13 +44,11 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
         .range(from, to);
       
       if (error) {
-        console.error("Supabase fetch error:", error);
-        setIsLoading(false); // Immediate error update
+        setIsLoading(false);
         return;
       }
 
       if (data) {
-        console.log(`Fetched ${data.length} images`);
         const mapped = data.map(img => ({
           id: img.id,
           url: img.url,
@@ -86,8 +80,6 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
 
   const syncOrphanedImages = async (userId: string) => {
     try {
-      console.log("🚀 [Definitive Sync] Escaneando archivos huérfanos...");
-      
       // 1. Listar archivos físicos
       const { data: files, error: listError } = await supabase.storage
         .from('images')
@@ -116,13 +108,7 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
         .filter(file => file.name !== '.emptyFolderPlaceholder')
         .filter(file => !existingFilenames.has(file.name));
 
-      if (missingRecords.length === 0) {
-        console.log("✅ Galería sincronizada permanentemente.");
-        return;
-      }
-
-      console.log(`🛠️ Recuperando ${missingRecords.length} obras huerfanas encontradas...`);
-      // toast.info(`Sincronizando ${missingRecords.length} obras antiguas...`);
+      if (missingRecords.length === 0) return;
 
       // 3. Insertar registros faltantes
       const toInsert = missingRecords.map(file => {
@@ -140,14 +126,8 @@ export function HistoryProvider({ children }: { children: React.ReactNode }) {
 
       const { error: insertError } = await supabase.from('images').insert(toInsert);
       
-      if (insertError) {
-        console.error("Error definitivo de inserción:", insertError);
-        return;
-      }
+      if (insertError) return;
 
-      console.log(`✨ Éxito: ${toInsert.length} obras sincronizadas permanentemente.`);
-      // toast.success("Galería restaurada con éxito");
-      
       // Forzar recarga de los primeros elementos
       await fetchHistory(0);
     } catch (err) {

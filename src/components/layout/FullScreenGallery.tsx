@@ -129,8 +129,12 @@ export function FullScreenGallery({ onClose, onSelectImage, onOpenLightbox, onVa
                   transition={{ delay: index * 0.02 }}
                   className="aspect-[3/4] group relative rounded-2xl overflow-hidden glass-panel border border-black/5 bg-black/[0.01] flex flex-col cursor-pointer"
                   onClick={() => {
-                    onSelectImage(img);
-                    onClose();
+                    if (onOpenLightbox) {
+                      onOpenLightbox(img);
+                    } else {
+                      onSelectImage(img);
+                      onClose();
+                    }
                   }}
                 >
                   <div className="flex-1 overflow-hidden relative">
@@ -162,6 +166,20 @@ export function FullScreenGallery({ onClose, onSelectImage, onOpenLightbox, onVa
                         <Maximize2 size={18} />
                       </Button>
                       
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        title="Cargar en Estudio"
+                        className="w-10 h-10 rounded-full bg-white/10 hover:bg-white text-white hover:text-black transition-all shadow-lg backdrop-blur-sm"
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          onSelectImage(img);
+                          onClose();
+                        }}
+                      >
+                        <Home size={18} />
+                      </Button>
+
                       {onVariation && (
                         <Button
                           size="icon"

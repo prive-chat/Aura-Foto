@@ -11,9 +11,15 @@ interface GalleryGridProps {
   onSelectImage: (img: GeneratedImage) => void;
   onOpenGallery?: () => void;
   onOpenLightbox?: (img: GeneratedImage) => void;
+  limit?: number;
 }
 
-export function GalleryGrid({ onSelectImage, onOpenGallery, onOpenLightbox }: GalleryGridProps) {
+export function GalleryGrid({ 
+  onSelectImage, 
+  onOpenGallery, 
+  onOpenLightbox, 
+  limit = 9 
+}: GalleryGridProps) {
   const { history, clearHistory, deleteImage, loadMore, hasMore, isLoading } = useHistory();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const loaderRef = useRef<HTMLDivElement>(null);
@@ -49,7 +55,13 @@ export function GalleryGrid({ onSelectImage, onOpenGallery, onOpenLightbox }: Ga
     }
   };
 
+  // We only show a limited amount for the sidebar/recent view
+  const displayedHistory = limit ? history.slice(0, limit) : history;
+  const showViewAll = onOpenGallery && history.length > limit;
+
   useEffect(() => {
+    if (limit) return; // No infinite scroll if limited
+    
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasMore && !isLoading) {
@@ -83,7 +95,7 @@ export function GalleryGrid({ onSelectImage, onOpenGallery, onOpenLightbox }: Ga
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between mb-6">
         <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold flex items-center gap-2">
-          Galería del Estudio
+          {limit ? 'Creaciones Recientes' : 'Galería del Estudio'}
         </label>
         <div className="flex items-center gap-2">
           {onOpenGallery && (
@@ -93,10 +105,10 @@ export function GalleryGrid({ onSelectImage, onOpenGallery, onOpenLightbox }: Ga
               onClick={onOpenGallery}
               className="h-7 px-2 text-[9px] uppercase tracking-widest text-neutral-400 hover:text-black transition-colors gap-1"
             >
-              <Maximize2 size={10} /> Expandir
+              <Maximize2 size={10} /> {limit ? 'Ver Todo' : 'Expandir'}
             </Button>
           )}
-          {history.length > 0 && (
+          {history.length > 0 && !limit && (
             <Button 
               variant="ghost" 
               size="sm"
@@ -114,7 +126,7 @@ export function GalleryGrid({ onSelectImage, onOpenGallery, onOpenLightbox }: Ga
           <GallerySkeleton />
         ) : (
           <AnimatePresence mode="popLayout">
-            {history.map((img, index) => (
+            {displayedHistory.map((img, index) => (
               <motion.div
                 key={img.id}
                 layout
@@ -123,7 +135,7 @@ export function GalleryGrid({ onSelectImage, onOpenGallery, onOpenLightbox }: Ga
                 exit={{ opacity: 0, scale: 0.8 }}
                 transition={{ 
                   duration: 0.4,
-                  delay: index < 12 ? index * 0.05 : 0 
+                  delay: index < (limit || 12) ? index * 0.05 : 0 
                 }}
                 onClick={() => onSelectImage(img)}
                 className="aspect-square rounded-xl overflow-hidden border border-black/5 bg-black/[0.01] flex items-center justify-center relative group active:scale-95 transition-transform cursor-pointer"
@@ -144,13 +156,13 @@ export function GalleryGrid({ onSelectImage, onOpenGallery, onOpenLightbox }: Ga
                     >
                       <AlertCircle className="text-red-400" size={20} />
                       <p className="text-[8px] text-white font-bold uppercase tracking-tighter leading-tight">
-                        ¿Borrar obra?
+                        ¿Borrar?
                       </p>
                       <div className="flex gap-1">
                         <Button
                           size="sm"
                           variant="destructive"
-                          className="h-6 px-2 text-[8px] rounded-md"
+                          className="h-6 px-1.5 text-[8px] rounded-md"
                           onClick={(e) => handleConfirmDelete(e, img)}
                         >
                           SÍ
@@ -158,7 +170,7 @@ export function GalleryGrid({ onSelectImage, onOpenGallery, onOpenLightbox }: Ga
                         <Button
                           size="sm"
                           variant="secondary"
-                          className="h-6 px-2 text-[8px] rounded-md text-black"
+                          className="h-6 px-1.5 text-[8px] rounded-md text-black"
                           onClick={(e) => { e.stopPropagation(); setDeletingId(null); }}
                         >
                           NO
@@ -182,25 +194,29 @@ export function GalleryGrid({ onSelectImage, onOpenGallery, onOpenLightbox }: Ga
                       >
                         <Maximize2 size={14} />
                       </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="w-8 h-8 rounded-full bg-white/20 hover:bg-white text-white hover:text-black transition-all shadow-lg"
-                        onClick={(e) => handleDownload(e, img)}
-                      >
-                        <Download size={14} />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="w-8 h-8 rounded-full bg-white/20 hover:bg-red-500 text-white transition-all shadow-lg"
-                        onClick={(e) => { 
-                          e.stopPropagation(); 
-                          setDeletingId(img.id); 
-                        }}
-                      >
-                        <Trash2 size={14} />
-                      </Button>
+                      {!limit && (
+                        <>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="w-8 h-8 rounded-full bg-white/20 hover:bg-white text-white hover:text-black transition-all shadow-lg"
+                            onClick={(e) => handleDownload(e, img)}
+                          >
+                            <Download size={14} />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="w-8 h-8 rounded-full bg-white/20 hover:bg-red-500 text-white transition-all shadow-lg"
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              setDeletingId(img.id); 
+                            }}
+                          >
+                            <Trash2 size={14} />
+                          </Button>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
@@ -210,6 +226,18 @@ export function GalleryGrid({ onSelectImage, onOpenGallery, onOpenLightbox }: Ga
         )}
       </div>
 
+      {showViewAll && (
+        <div className="mt-8 flex justify-center">
+          <Button
+            variant="outline"
+            onClick={onOpenGallery}
+            className="rounded-full border-black/5 bg-black/5 hover:bg-black hover:text-white transition-all text-[9px] uppercase tracking-[0.2em] font-bold px-6 h-10 shadow-lg shadow-black/5"
+          >
+            Ver Galería Completa
+          </Button>
+        </div>
+      )}
+
       {history.length === 0 && !isLoading && (
         <div className="flex flex-col items-center justify-center py-12 text-center space-y-3 opacity-30">
           <CloudOff size={32} />
@@ -217,17 +245,19 @@ export function GalleryGrid({ onSelectImage, onOpenGallery, onOpenLightbox }: Ga
         </div>
       )}
 
-      {/* Infinite Scroll Trigger */}
-      <div ref={loaderRef} className="py-8 flex justify-center">
-        {isLoading && hasMore && (
-          <Loader2 className="animate-spin text-neutral-300" size={24} />
-        )}
-        {!hasMore && history.length > 0 && (
-          <p className="text-[8px] uppercase tracking-[0.2em] text-neutral-300 font-bold">
-            Fin de la colección
-          </p>
-        )}
-      </div>
+      {/* Infinite Scroll Trigger - Only if NOT limited */}
+      {!limit && (
+        <div ref={loaderRef} className="py-8 flex justify-center">
+          {isLoading && hasMore && (
+            <Loader2 className="animate-spin text-neutral-300" size={24} />
+          )}
+          {!hasMore && history.length > 0 && (
+            <p className="text-[8px] uppercase tracking-[0.2em] text-neutral-300 font-bold">
+              Fin de la colección
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

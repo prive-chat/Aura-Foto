@@ -27,6 +27,7 @@ function AuraApp() {
   const [lightboxImage, setLightboxImage] = useState<GeneratedImage | null>(null);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [showGallery, setShowGallery] = useState(false);
+  const [isZenMode, setIsZenMode] = useState(false);
   
   const gen = useImageGeneration();
 
@@ -62,11 +63,12 @@ function AuraApp() {
   };
 
   return (
-    <div className="fixed inset-0 bg-studio-bg text-neutral-900 font-sans selection:bg-black selection:text-white flex flex-col md:flex-row overflow-hidden">
+    <div className="fixed inset-0 bg-[#050505] text-white font-sans selection:bg-white selection:text-black flex flex-col md:flex-row overflow-hidden">
       <SEO 
         title={showGallery ? "Explorador de Auras" : "Estudio Artístico"}
         description={showGallery ? "Explora la colección completa de retratos artísticos generados por la comunidad de Aura Studio." : undefined}
       />
+      <div className="atmosphere-bg" />
       <div className="noise-overlay" />
       
       <LoginModal />
@@ -99,37 +101,53 @@ function AuraApp() {
         <AdminPanel onClose={() => setShowAdminPanel(false)} />
       )}
 
-      <Sidebar 
-        prompt={gen.prompt}
-        setPrompt={gen.setPrompt}
-        isGenerating={gen.isGenerating}
-        isEnhancing={gen.isEnhancing}
-        error={gen.error}
-        batchCount={gen.batchCount}
-        setBatchCount={gen.setBatchCount}
-        isHighRes={gen.isHighRes}
-        setIsHighRes={gen.setIsHighRes}
-        aspectRatio={gen.aspectRatio}
-        setAspectRatio={gen.setAspectRatio}
-        style={gen.style}
-        setStyle={gen.setStyle}
-        onGenerate={handleGenerate}
-        onEnhance={gen.handleEnhancePrompt}
-        onSelectImage={(img) => setSelectedImage(img)}
-        onOpenLightbox={setLightboxImage}
-        onOpenAdmin={() => setShowAdminPanel(true)}
-        referenceImage={gen.referenceImage}
-        onClearReference={() => gen.setReferenceImage(null)}
-        setReferenceImage={gen.setReferenceImage}
-        onOpenGallery={() => setShowGallery(true)}
-      />
+      <div className="flex-1 flex flex-col md:flex-row relative">
+        <motion.div
+          animate={{ 
+            x: isZenMode ? -420 : 0,
+            opacity: isZenMode ? 0 : 1,
+            width: isZenMode ? 0 : 420
+          }}
+          transition={{ type: 'spring', damping: 25, stiffness: 120 }}
+          className="h-[100dvh] z-40 overflow-hidden"
+        >
+          <Sidebar 
+            prompt={gen.prompt}
+            setPrompt={gen.setPrompt}
+            isGenerating={gen.isGenerating}
+            isEnhancing={gen.isEnhancing}
+            error={gen.error}
+            batchCount={gen.batchCount}
+            setBatchCount={gen.setBatchCount}
+            isHighRes={gen.isHighRes}
+            setIsHighRes={gen.setIsHighRes}
+            aspectRatio={gen.aspectRatio}
+            setAspectRatio={gen.setAspectRatio}
+            style={gen.style}
+            setStyle={gen.setStyle}
+            onGenerate={handleGenerate}
+            onEnhance={gen.handleEnhancePrompt}
+            onSelectImage={(img) => setSelectedImage(img)}
+            onOpenLightbox={setLightboxImage}
+            onOpenAdmin={() => setShowAdminPanel(true)}
+            referenceImage={gen.referenceImage}
+            onClearReference={() => gen.setReferenceImage(null)}
+            setReferenceImage={gen.setReferenceImage}
+            onOpenGallery={() => setShowGallery(true)}
+          />
+        </motion.div>
 
-      <MainPreview 
-        selectedImage={selectedImage} 
-        onClose={() => setSelectedImage(null)}
-        aspectRatio={gen.aspectRatio}
-        onVariation={handleVariation}
-      />
+        <div className="flex-1 relative">
+          <MainPreview 
+            selectedImage={selectedImage} 
+            onClose={() => setSelectedImage(null)}
+            aspectRatio={gen.aspectRatio}
+            onVariation={handleVariation}
+            isZenMode={isZenMode}
+            onToggleZen={() => setIsZenMode(!isZenMode)}
+          />
+        </div>
+      </div>
     </div>
   );
 }

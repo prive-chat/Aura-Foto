@@ -65,20 +65,21 @@ export function FullScreenGallery({ onClose, onSelectImage, onOpenLightbox, onVa
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] bg-studio-bg flex flex-col h-[100dvh]"
+      className="fixed inset-0 z-[100] bg-[#050505] flex flex-col h-[100dvh] text-white"
     >
-      <div className="noise-overlay opacity-30 pointer-events-none" />
+      <div className="atmosphere-bg opacity-50" />
+      <div className="noise-overlay opacity-20 pointer-events-none" />
       
       {/* Navigation Header */}
-      <header className="h-24 shrink-0 border-b border-black/5 px-8 md:px-12 flex items-center justify-between bg-white/50 backdrop-blur-xl relative z-10">
+      <header className="h-24 shrink-0 border-b border-white/5 px-8 md:px-12 flex items-center justify-between glass-2 relative z-10">
         <div className="flex items-center gap-8">
           <div className="flex flex-col">
             <h2 className="text-2xl font-serif font-light tracking-tight flex items-center gap-3">
-              EXPLORADOR DE <span className="italic">AURAS</span>
+              EXPLORADOR DE <span className="italic text-white/50">AURAS</span>
             </h2>
-            <div className="flex items-center gap-4 text-[10px] text-neutral-400 font-bold uppercase tracking-widest mt-1">
+            <div className="flex items-center gap-4 text-[10px] text-white/40 font-bold uppercase tracking-widest mt-1">
               <span>{history.length} Obras Coleccionadas</span>
-              <span className="w-1 h-1 rounded-full bg-black/10" />
+              <span className="w-1 h-1 rounded-full bg-white/10" />
               <span className="flex items-center gap-1.5"><Grid3X3 size={10} /> Mosaico</span>
             </div>
           </div>
@@ -88,13 +89,13 @@ export function FullScreenGallery({ onClose, onSelectImage, onOpenLightbox, onVa
           <Button 
             variant="outline" 
             onClick={onClose}
-            className="rounded-2xl border-black/5 h-12 px-6 gap-2 hover:bg-black hover:text-white transition-all font-bold text-[10px] uppercase tracking-widest"
+            className="rounded-full border-white/10 glass-card h-12 px-6 gap-2 hover:bg-white hover:text-black transition-all font-bold text-[10px] uppercase tracking-widest"
           >
             <Home size={14} /> Inicio
           </Button>
           <Button 
             onClick={onClose}
-            className="rounded-2xl bg-black text-white h-12 px-6 gap-2 hover:bg-neutral-800 transition-all font-bold text-[10px] uppercase tracking-widest"
+            className="rounded-full bg-white text-black h-12 px-6 gap-2 hover:bg-neutral-200 transition-all font-bold text-[10px] uppercase tracking-widest shadow-xl shadow-white/5"
           >
             <ArrowLeft size={14} /> Volver
           </Button>
@@ -106,19 +107,19 @@ export function FullScreenGallery({ onClose, onSelectImage, onOpenLightbox, onVa
         <div className="max-w-7xl mx-auto space-y-12">
           
           {/* Search bar */}
-          <div className="relative group max-w-xl">
-            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-black transition-colors" size={18} />
+          <div className="relative group max-w-xl mx-auto">
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-white transition-colors" size={18} />
             <input 
               type="text"
               placeholder="Buscar en tu colección..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full h-14 bg-black/5 rounded-2xl pl-14 pr-6 text-sm font-medium outline-none border border-transparent focus:border-black/5 focus:bg-white transition-all"
+              className="w-full h-14 bg-white/5 rounded-2xl pl-14 pr-6 text-sm font-medium outline-none border border-white/5 focus:border-white/20 focus:bg-white/10 transition-all text-white"
             />
           </div>
 
           <AnimatePresence mode="popLayout">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+            <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-6 space-y-6">
               {filteredHistory.map((img, index) => (
                 <motion.div
                   key={img.id}
@@ -127,7 +128,7 @@ export function FullScreenGallery({ onClose, onSelectImage, onOpenLightbox, onVa
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ delay: index * 0.02 }}
-                  className="aspect-[3/4] group relative rounded-2xl overflow-hidden glass-panel border border-black/5 bg-black/[0.01] flex flex-col cursor-pointer"
+                  className="break-inside-avoid relative rounded-3xl overflow-hidden glass-card border border-white/5 bg-white/[0.02] flex flex-col cursor-pointer group"
                   onClick={() => {
                     if (onOpenLightbox) {
                       onOpenLightbox(img);
@@ -137,22 +138,22 @@ export function FullScreenGallery({ onClose, onSelectImage, onOpenLightbox, onVa
                     }
                   }}
                 >
-                  <div className="flex-1 overflow-hidden relative">
-                    <SmartImage 
+                  <div className="relative overflow-hidden">
+                    <img 
                       src={img.url} 
                       alt={img.prompt} 
-                      aspectRatio="3:2" // We'll force 3:2 for mosaic consistency
-                      containerClassName="w-full h-full"
-                      className="transition-transform duration-1000 group-hover:scale-110"
+                      className="w-full h-auto object-cover transition-transform duration-1000 group-hover:scale-105"
+                      loading="lazy"
+                      referrerPolicy="no-referrer"
                     />
                     
                     {/* Hover Actions */}
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-2">
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-500 backdrop-blur-sm flex items-center justify-center gap-2">
                        <Button
                         size="icon"
                         variant="ghost"
                         title="Ver en detalle"
-                        className="w-10 h-10 rounded-full bg-white/10 hover:bg-white text-white hover:text-black transition-all shadow-lg backdrop-blur-sm"
+                        className="w-10 h-10 rounded-full bg-white/10 hover:bg-white text-white hover:text-black transition-all shadow-lg border border-white/10"
                         onClick={(e) => { 
                           e.stopPropagation(); 
                           if (onOpenLightbox) {
@@ -170,7 +171,7 @@ export function FullScreenGallery({ onClose, onSelectImage, onOpenLightbox, onVa
                         size="icon"
                         variant="ghost"
                         title="Cargar en Estudio"
-                        className="w-10 h-10 rounded-full bg-white/10 hover:bg-white text-white hover:text-black transition-all shadow-lg backdrop-blur-sm"
+                        className="w-10 h-10 rounded-full bg-white/10 hover:bg-white text-white hover:text-black transition-all shadow-lg border border-white/10"
                         onClick={(e) => { 
                           e.stopPropagation(); 
                           onSelectImage(img);
@@ -180,38 +181,11 @@ export function FullScreenGallery({ onClose, onSelectImage, onOpenLightbox, onVa
                         <Home size={18} />
                       </Button>
 
-                      {onVariation && (
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          title="Crear variación"
-                          className="w-10 h-10 rounded-full bg-white/10 hover:bg-white text-white hover:text-black transition-all shadow-lg backdrop-blur-sm border border-white/20"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onVariation(img);
-                            onClose();
-                            toast.info("Imagen cargada como referencia para variación");
-                          }}
-                        >
-                          <Layers size={18} />
-                        </Button>
-                      )}
-
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        title="Descargar"
-                        className="w-10 h-10 rounded-full bg-white/10 hover:bg-white text-white hover:text-black transition-all shadow-lg backdrop-blur-sm"
-                        onClick={(e) => handleDownload(e, img)}
-                      >
-                        <Download size={18} />
-                      </Button>
-
                       <Button
                         size="icon"
                         variant="ghost"
                         title="Eliminar"
-                        className="w-10 h-10 rounded-full bg-white/10 hover:bg-red-500 text-white transition-all shadow-lg backdrop-blur-sm"
+                        className="w-10 h-10 rounded-full bg-white/5 hover:bg-red-500 text-white transition-all shadow-lg border border-white/10"
                         onClick={(e) => handleDelete(e, img.id)}
                       >
                         <Trash2 size={18} />
@@ -219,15 +193,18 @@ export function FullScreenGallery({ onClose, onSelectImage, onOpenLightbox, onVa
                     </div>
                   </div>
 
-                  <div className="p-4 bg-white/80 backdrop-blur-sm border-t border-black/5">
-                    <p className="text-[10px] text-black font-semibold line-clamp-2 italic leading-relaxed">
+                  <div className="p-5 space-y-4 bg-gradient-to-b from-transparent to-black/40">
+                    <p className="text-[10px] text-white/90 font-serif font-light line-clamp-2 italic leading-relaxed">
                       "{img.prompt}"
                     </p>
-                    <div className="flex items-center gap-2 mt-3 opacity-40">
-                      <Calendar size={10} />
-                      <span className="text-[8px] font-bold uppercase tracking-widest">
-                        {new Date(img.timestamp).toLocaleDateString()}
-                      </span>
+                    <div className="flex items-center justify-between opacity-30 mt-2">
+                      <div className="flex items-center gap-2">
+                        <Calendar size={10} />
+                        <span className="text-[8px] font-bold uppercase tracking-widest">
+                          {new Date(img.timestamp).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <Layers size={10} />
                     </div>
                   </div>
                 </motion.div>

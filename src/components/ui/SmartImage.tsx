@@ -45,12 +45,15 @@ export function SmartImage({
     '1:1': 'aspect-square',
     '2:3': 'aspect-[2/3]',
     '3:2': 'aspect-[3/2]',
-    '9:16': 'aspect-[9/16]'
-  }[aspectRatio];
+    '3:4': 'aspect-[3/4]',
+    '4:3': 'aspect-[4/3]',
+    '9:16': 'aspect-[9/16]',
+    '16:9': 'aspect-[16:9]'
+  }[aspectRatio as any];
 
   return (
     <div className={cn(
-      "relative overflow-hidden bg-neutral-100 group",
+      "relative overflow-hidden bg-white/5 group",
       ratioClass,
       containerClassName
     )}>
@@ -63,7 +66,7 @@ export function SmartImage({
             exit={{ opacity: 0 }}
             src={blurUrl}
             alt="blur"
-            className="absolute inset-0 w-full h-full object-cover blur-xl scale-110"
+            className="absolute inset-0 w-full h-full object-cover blur-3xl scale-125"
             referrerPolicy="no-referrer"
           />
         )}
@@ -71,8 +74,8 @@ export function SmartImage({
 
       {/* Loading Spinner */}
       {showLoading && !loaded && !error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/5 z-10">
-          <Loader2 className="animate-spin text-black/20" size={24} />
+        <div className="absolute inset-0 flex items-center justify-center bg-transparent z-10">
+          <Loader2 className="animate-spin text-white/10" size={24} />
         </div>
       )}
 

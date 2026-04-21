@@ -24,22 +24,32 @@ export function ArtisticControls({
         <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold flex items-center gap-2">
           <Layers size={14} /> Estilo Artístico
         </label>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-3">
           {ARTISTIC_STYLES.map((s) => (
             <button
-              key={s}
-              onClick={() => setStyle(s)}
-              className={`px-4 py-3 rounded-xl border text-[10px] uppercase tracking-wider transition-all duration-500 relative overflow-hidden group ${
-                style === s 
-                ? 'bg-black text-white border-black font-bold' 
-                : 'bg-black/5 border-black/5 text-neutral-500 hover:border-black/20'
+              key={s.name}
+              onClick={() => setStyle(s.name)}
+              className={`group relative aspect-square rounded-2xl overflow-hidden border-2 transition-all duration-500 ${
+                style === s.name 
+                ? 'border-white scale-[1.02] shadow-2xl shadow-white/10' 
+                : 'border-transparent opacity-60 hover:opacity-100'
               }`}
             >
-              <span className="relative z-10">{s}</span>
-              {style === s && (
+              <img 
+                src={s.image} 
+                alt={s.name}
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                referrerPolicy="no-referrer"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 p-3">
+                <p className="text-[9px] uppercase tracking-widest font-bold text-white mb-0.5">{s.name}</p>
+                <p className="text-[7px] text-white/50 leading-tight line-clamp-1">{s.description}</p>
+              </div>
+              {style === s.name && (
                 <motion.div 
-                  layoutId="activeStyle"
-                  className="absolute inset-0 bg-black"
+                  layoutId="activeStyleBorder"
+                  className="absolute inset-0 border-2 border-white rounded-2xl z-20 pointer-events-none"
                 />
               )}
             </button>

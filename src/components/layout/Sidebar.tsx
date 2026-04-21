@@ -43,7 +43,7 @@ export function Sidebar(props: SidebarProps) {
   const { canInstall, install } = usePWA();
 
   return (
-    <aside className="w-full md:w-[420px] bg-studio-bg/80 backdrop-blur-3xl h-full flex flex-col shrink-0 z-40 border-r border-black/5 relative overflow-hidden">
+    <aside className="w-full md:w-[420px] glass-2 h-full flex flex-col shrink-0 z-40 border-r border-white/5 relative overflow-hidden">
       {/* Header - Fixed height if we want just content to scroll */}
       <div className="p-8 pb-4 flex items-center justify-between shrink-0">
         <Logo showText={true} />
@@ -53,7 +53,7 @@ export function Sidebar(props: SidebarProps) {
               size="sm"
               variant="outline"
               onClick={install}
-              className="h-8 rounded-full border-black/5 bg-black/5 hover:bg-black hover:text-white transition-all text-[9px] uppercase tracking-widest font-bold px-3 gap-1.5"
+              className="h-8 rounded-full border-white/10 glass-card text-white/50 hover:bg-white hover:text-black transition-all text-[9px] uppercase tracking-widest font-bold px-3 gap-1.5"
             >
               <DownloadIcon size={12} /> Instalar
             </Button>
@@ -63,7 +63,7 @@ export function Sidebar(props: SidebarProps) {
               size="icon"
               variant="outline"
               onClick={props.onOpenAdmin}
-              className="rounded-2xl border-black/5 hover:bg-black hover:text-white transition-all shadow-lg shadow-black/5"
+              className="rounded-2xl border-white/10 glass-card text-white/60 hover:bg-white hover:text-black transition-all"
             >
               <ShieldCheck size={18} />
             </Button>
@@ -72,7 +72,7 @@ export function Sidebar(props: SidebarProps) {
             size="icon"
             variant="ghost"
             onClick={user ? signOut : () => setShowLoginModal(true)}
-            className="rounded-2xl bg-black/5 hover:bg-black/10 border border-transparent hover:border-black/5"
+            className="rounded-2xl bg-white/5 hover:bg-white/10 border border-transparent hover:border-white/10 text-white/60 hover:text-white"
           >
             {user ? <LogOut size={18} /> : <LogIn size={18} />}
           </Button>
@@ -118,7 +118,7 @@ export function Sidebar(props: SidebarProps) {
             <Button
               onClick={props.onGenerate}
               disabled={props.isGenerating || !props.prompt.trim()}
-              className="w-full h-16 bg-black text-white rounded-2xl font-bold uppercase tracking-[0.2em] text-[10px] flex items-center justify-center gap-3 hover:bg-neutral-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-[0.98] shadow-xl shadow-black/10"
+              className="w-full h-16 bg-white text-black rounded-3xl font-bold uppercase tracking-[0.2em] text-[10px] flex items-center justify-center gap-3 hover:bg-neutral-200 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-[0.98] shadow-2xl shadow-white/5"
             >
               {props.isGenerating ? (
                 <>
@@ -134,13 +134,13 @@ export function Sidebar(props: SidebarProps) {
             </Button>
 
             {props.error && (
-              <p className="text-red-500 text-[10px] text-center font-bold tracking-widest uppercase animate-bounce">
+              <p className="text-red-400 text-[10px] text-center font-bold tracking-widest uppercase animate-bounce">
                 {props.error}
               </p>
             )}
           </div>
 
-          <Separator className="bg-black/5" />
+          <Separator className="bg-white/5" />
 
           <div className="pb-10">
             <GalleryGrid 

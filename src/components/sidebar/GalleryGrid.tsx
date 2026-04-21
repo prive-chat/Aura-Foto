@@ -83,7 +83,7 @@ export function GalleryGrid({
       {[1, 2, 3, 4, 5, 6].map((i) => (
         <div 
           key={i} 
-          className="aspect-square rounded-xl bg-black/[0.03] animate-pulse overflow-hidden relative"
+          className="aspect-square rounded-xl bg-white/[0.03] animate-pulse overflow-hidden relative"
         >
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full animate-[shimmer_1.5s_infinite]" />
         </div>
@@ -94,8 +94,8 @@ export function GalleryGrid({
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between mb-6">
-        <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold flex items-center gap-2">
-          {limit ? 'Creaciones Recientes' : 'Galería del Estudio'}
+        <label className="text-[10px] uppercase tracking-widest text-white/30 font-bold flex items-center gap-2">
+          {limit ? 'Exploración Reciente' : 'Galería del Estudio'}
         </label>
         <div className="flex items-center gap-2">
           {onOpenGallery && (
@@ -103,19 +103,9 @@ export function GalleryGrid({
               variant="ghost" 
               size="sm"
               onClick={onOpenGallery}
-              className="h-7 px-2 text-[9px] uppercase tracking-widest text-neutral-400 hover:text-black transition-colors gap-1"
+              className="h-7 px-2 text-[9px] uppercase tracking-widest text-white/30 hover:text-white transition-colors gap-1 hover:bg-white/10"
             >
               <Maximize2 size={10} /> {limit ? 'Ver Todo' : 'Expandir'}
-            </Button>
-          )}
-          {history.length > 0 && !limit && (
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={clearHistory}
-              className="h-7 px-2 text-[9px] uppercase tracking-widest text-neutral-400 hover:text-red-500 transition-colors gap-1"
-            >
-              <Trash2 size={10} /> Borrar Todo
             </Button>
           )}
         </div>
@@ -138,7 +128,7 @@ export function GalleryGrid({
                   delay: index < (limit || 12) ? index * 0.05 : 0 
                 }}
                 onClick={() => onSelectImage(img)}
-                className="aspect-square rounded-xl overflow-hidden border border-black/5 bg-black/[0.01] flex items-center justify-center relative group active:scale-95 transition-transform cursor-pointer"
+                className="aspect-square rounded-xl overflow-hidden border border-white/5 bg-white/[0.01] flex items-center justify-center relative group active:scale-95 transition-transform cursor-pointer"
               >
                 <SmartImage 
                   src={img.url} 
@@ -147,7 +137,7 @@ export function GalleryGrid({
                   aspectRatio="1:1"
                   showLoading={false}
                 />
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col items-center justify-center p-2 text-center">
+                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col items-center justify-center p-2 text-center backdrop-blur-sm">
                   {deletingId === img.id ? (
                     <motion.div 
                       initial={{ scale: 0.9, opacity: 0 }}
@@ -182,7 +172,7 @@ export function GalleryGrid({
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="w-8 h-8 rounded-full bg-white/20 hover:bg-white text-white hover:text-black transition-all shadow-lg"
+                        className="w-8 h-8 rounded-full bg-white/10 hover:bg-white text-white hover:text-black transition-all shadow-lg border border-white/10"
                         onClick={(e) => { 
                           e.stopPropagation(); 
                           if (onOpenLightbox) {
@@ -194,29 +184,17 @@ export function GalleryGrid({
                       >
                         <Maximize2 size={14} />
                       </Button>
-                      {!limit && (
-                        <>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="w-8 h-8 rounded-full bg-white/20 hover:bg-white text-white hover:text-black transition-all shadow-lg"
-                            onClick={(e) => handleDownload(e, img)}
-                          >
-                            <Download size={14} />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="w-8 h-8 rounded-full bg-white/20 hover:bg-red-500 text-white transition-all shadow-lg"
-                            onClick={(e) => { 
-                              e.stopPropagation(); 
-                              setDeletingId(img.id); 
-                            }}
-                          >
-                            <Trash2 size={14} />
-                          </Button>
-                        </>
-                      )}
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="w-8 h-8 rounded-full bg-white/10 hover:bg-red-500 text-white transition-all shadow-lg border border-white/10"
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          setDeletingId(img.id); 
+                        }}
+                      >
+                        <Trash2 size={14} />
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -231,7 +209,7 @@ export function GalleryGrid({
           <Button
             variant="outline"
             onClick={onOpenGallery}
-            className="rounded-full border-black/5 bg-black/5 hover:bg-black hover:text-white transition-all text-[9px] uppercase tracking-[0.2em] font-bold px-6 h-10 shadow-lg shadow-black/5"
+            className="rounded-full border-white/10 glass-card hover:bg-white hover:text-black transition-all text-[9px] uppercase tracking-[0.2em] font-bold px-6 h-10"
           >
             Ver Galería Completa
           </Button>
@@ -239,9 +217,9 @@ export function GalleryGrid({
       )}
 
       {history.length === 0 && !isLoading && (
-        <div className="flex flex-col items-center justify-center py-12 text-center space-y-3 opacity-30">
+        <div className="flex flex-col items-center justify-center py-12 text-center space-y-3 opacity-20">
           <CloudOff size={32} />
-          <p className="text-[10px] uppercase tracking-widest font-bold">Sin obras recientes</p>
+          <p className="text-[10px] uppercase tracking-widest font-bold text-white">Sin obras recientes</p>
         </div>
       )}
 

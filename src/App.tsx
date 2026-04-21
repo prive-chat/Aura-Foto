@@ -10,6 +10,7 @@ import { LoginModal } from './components/auth/LoginModal';
 import { AdminPanel } from './components/admin/AdminPanel';
 import { FullScreenGallery } from './components/layout/FullScreenGallery';
 import { ImageLightbox } from './components/layout/ImageLightbox';
+import { SEO } from './components/layout/SEO';
 import { Logo } from './components/ui/Logo';
 import { Toaster } from '@/components/ui/sonner';
 import { useImageGeneration } from './hooks/useImageGeneration';
@@ -62,6 +63,10 @@ function AuraApp() {
 
   return (
     <div className="fixed inset-0 bg-studio-bg text-neutral-900 font-sans selection:bg-black selection:text-white flex flex-col md:flex-row overflow-hidden">
+      <SEO 
+        title={showGallery ? "Explorador de Auras" : "Estudio Artístico"}
+        description={showGallery ? "Explora la colección completa de retratos artísticos generados por la comunidad de Aura Studio." : undefined}
+      />
       <div className="noise-overlay" />
       
       <LoginModal />

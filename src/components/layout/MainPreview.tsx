@@ -10,13 +10,17 @@ import {
   Paintbrush, 
   Sparkles,
   Download,
-  Share2
+  Share2,
+  Trash2,
+  AlertCircle
 } from 'lucide-react';
 import { GeneratedImage } from '../../types';
 import { ImageEditor } from './ImageEditor';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { SmartImage } from '../ui/SmartImage';
+import { useHistory } from '../../contexts/HistoryContext';
+import { toast } from 'sonner';
 
 interface MainPreviewProps {
   selectedImage: GeneratedImage | null;
@@ -36,6 +40,19 @@ export function MainPreview({
   onToggleZen
 }: MainPreviewProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  const { deleteImage } = useHistory();
+
+  const handleDelete = async () => {
+    if (!selectedImage) return;
+    try {
+      await deleteImage(selectedImage.id, selectedImage.url);
+      toast.success("Obra eliminada del estudio");
+      onClose();
+    } catch (error) {
+      toast.error("No se pudo eliminar la imagen");
+    }
+  };
 
   return (
     <main className="flex-1 bg-transparent flex flex-col items-center p-4 md:p-12 relative min-h-0 h-full overflow-y-auto custom-scrollbar">
@@ -136,9 +153,33 @@ export function MainPreview({
                     <div className="p-3 glass-card rounded-2xl group-hover:bg-white/10 group-hover:border-white/30"><Sparkles size={16} /></div>
                     Refinar
                   </button>
-                  <button onClick={onClose} className="flex flex-col items-center gap-3 text-[9px] uppercase tracking-[0.3em] font-bold text-white/20 hover:text-red-400 transition-all group scale-90 hover:scale-100">
-                    <div className="p-3 glass-card rounded-2xl group-hover:bg-red-500/10 group-hover:border-red-500/30"><X size={16} /></div>
-                    Descartar
+                  
+                  {isConfirmingDelete ? (
+                    <button 
+                      onClick={handleDelete}
+                      onMouseLeave={() => setIsConfirmingDelete(false)}
+                      className="flex flex-col items-center gap-3 text-[9px] uppercase tracking-[0.3em] font-bold text-red-400 animate-pulse group scale-100"
+                    >
+                      <div className="p-3 bg-red-500/20 border border-red-500/40 rounded-2xl shadow-[0_0_20px_rgba(239,68,68,0.2)]">
+                        <Trash2 size={16} />
+                      </div>
+                      BORRAR
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={() => setIsConfirmingDelete(true)} 
+                      className="flex flex-col items-center gap-3 text-[9px] uppercase tracking-[0.3em] font-bold text-white/20 hover:text-red-400 transition-all group scale-90 hover:scale-100"
+                    >
+                      <div className="p-3 glass-card rounded-2xl group-hover:bg-red-500/10 group-hover:border-red-500/30">
+                        <Trash2 size={16} />
+                      </div>
+                      Eliminar
+                    </button>
+                  )}
+                  
+                  <button onClick={onClose} className="flex flex-col items-center gap-3 text-[9px] uppercase tracking-[0.3em] font-bold text-white/20 hover:text-white transition-all group scale-90 hover:scale-100">
+                    <div className="p-3 glass-card rounded-2xl group-hover:bg-white/10 group-hover:border-white/30"><X size={16} /></div>
+                    Cerrar
                   </button>
                 </div>
               </div>

@@ -10,6 +10,7 @@ import { LoginModal } from './components/auth/LoginModal';
 import { AdminPanel } from './components/admin/AdminPanel';
 import { FullScreenGallery } from './components/layout/FullScreenGallery';
 import { ImageLightbox } from './components/layout/ImageLightbox';
+import { Logo } from './components/ui/Logo';
 import { Toaster } from '@/components/ui/sonner';
 import { useImageGeneration } from './hooks/useImageGeneration';
 import { GeneratedImage } from './types';
@@ -30,16 +31,17 @@ function AuraApp() {
 
   if (isLoading) {
     return (
-      <div className="h-[100dvh] w-screen flex flex-col items-center justify-center bg-studio-bg gap-6">
+      <div className="h-[100dvh] w-screen flex flex-col items-center justify-center bg-studio-bg gap-12">
         <div className="relative">
-          <Loader2 className="animate-spin text-black/20" size={48} />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-2 h-2 bg-black rounded-full animate-pulse" />
-          </div>
-        </div>
-        <div className="flex flex-col items-center gap-1">
-          <h1 className="text-xl font-serif font-light tracking-[0.2em] text-black">AURA</h1>
-          <p className="text-[10px] uppercase tracking-[0.4em] text-neutral-400 font-bold">Iniciando Estudio</p>
+           <Logo size={120} />
+           <motion.div 
+             className="absolute -bottom-10 left-0 right-0 flex justify-center"
+             initial={{ opacity: 0 }}
+             animate={{ opacity: 1 }}
+             transition={{ delay: 0.5 }}
+           >
+              <p className="text-[10px] uppercase tracking-[0.4em] text-neutral-400 font-bold animate-pulse">Iniciando Estudio</p>
+           </motion.div>
         </div>
       </div>
     );

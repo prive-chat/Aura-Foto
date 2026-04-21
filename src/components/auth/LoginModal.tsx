@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Sparkles, Loader2, Eye, EyeOff } from 'lucide-react';
+import { X, Loader2, Eye, EyeOff } from 'lucide-react';
+import { Logo } from '../ui/Logo';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -66,13 +67,8 @@ export function LoginModal() {
             )}
 
             <form onSubmit={handleAuth} className="text-center space-y-6 pt-4 text-black">
-              <div className="w-16 h-16 bg-black/5 rounded-2xl flex items-center justify-center mx-auto border border-black/5 mb-2">
-                <motion.div
-                  animate={{ rotate: isSignUp ? 180 : 0 }}
-                  transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-                >
-                  <Sparkles className="text-black" size={32} />
-                </motion.div>
+              <div className="flex justify-center mb-2">
+                <Logo size={64} />
               </div>
               
               <div className="space-y-2">

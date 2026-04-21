@@ -1,5 +1,6 @@
 import React from 'react';
 import { Plus, LogOut, LogIn, ShieldCheck, Loader2, Download as DownloadIcon } from 'lucide-react';
+import { Logo } from '../ui/Logo';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePWA } from '../../hooks/usePWA';
 import { PromptSection } from '../sidebar/PromptSection';
@@ -45,9 +46,7 @@ export function Sidebar(props: SidebarProps) {
     <aside className="w-full md:w-[420px] bg-studio-bg/80 backdrop-blur-3xl h-full flex flex-col shrink-0 z-40 border-r border-black/5 relative overflow-hidden">
       {/* Header - Fixed height if we want just content to scroll */}
       <div className="p-8 pb-4 flex items-center justify-between shrink-0">
-        <h1 className="text-3xl font-serif font-light tracking-wide flex items-center gap-2">
-          AURA <span className="text-neutral-500 font-sans text-[10px] tracking-[0.4em] uppercase font-bold">Studio</span>
-        </h1>
+        <Logo showText={true} />
         <div className="flex items-center gap-2">
           {canInstall && (
             <Button 

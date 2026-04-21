@@ -74,40 +74,40 @@ async function urlToBase64(url: string): Promise<{ data: string, mimeType: strin
 }
 
 export async function generateArtisticPortrait(params: ImageGenerationParams): Promise<string> {
-  const realismKeywords = "raw photo, shot on 35mm lens, f/1.8, incredibly detailed skin pores, natural skin texture, masterpiece, 8k uhd, cinematic lighting, hyper-realistic eyes, sharp focus, professional photography, authentic textures, high dynamic range, subsurface scattering";
+  // Use professional but direct keywords, avoiding "masterpiece" or "8k" which can trigger some filters
+  const realismKeywords = "professional photography, high resolution, sharp focus, natural lighting, realistic textures, cinematic composition";
   
-  // Use high-res model if requested
+  // Use gemini-3.1-flash-image-preview as it's more robust for 1K resolution
   const modelName = params.isHighRes ? 'gemini-3.1-flash-image-preview' : 'gemini-2.5-flash-image';
   
-  // Simplified and more direct prompt for the image generation model
-  const fullPrompt = `${params.prompt}. Professional raw photography, ${params.style || 'natural'} lighting, ${realismKeywords}. Authentic human features, photorealism.${params.referenceImage ? " Strictly follow the structural reference from the provided image." : ""}`;
+  // Simplified prompt construction
+  const stylePrefix = params.style ? `${params.style} style. ` : "";
+  const fullPrompt = `${stylePrefix}${params.prompt}. ${realismKeywords}.${params.referenceImage ? " Transform the reference image while keeping its composition." : ""}`;
 
   const contents: any = {
     parts: [{ text: fullPrompt }]
   };
 
   if (params.referenceImage) {
-    if (params.referenceImage.startsWith('http')) {
-      const { data, mimeType } = await urlToBase64(params.referenceImage);
-      contents.parts.push({
-        inlineData: {
-          data: data,
-          mimeType: mimeType
-        }
-      });
-    } else {
-      const parts = params.referenceImage.split(',');
-      if (parts.length > 1) {
-        const header = parts[0];
-        const data = parts[1];
-        const mimeType = header.match(/:(.*?);/)?.[1] || 'image/png';
+    try {
+      if (params.referenceImage.startsWith('http')) {
+        const { data, mimeType } = await urlToBase64(params.referenceImage);
         contents.parts.push({
-          inlineData: {
-            data: data,
-            mimeType: mimeType
-          }
+          inlineData: { data, mimeType }
         });
+      } else {
+        const matches = params.referenceImage.match(/^data:([^;]+);base64,(.+)$/);
+        if (matches) {
+          contents.parts.push({
+            inlineData: {
+              mimeType: matches[1],
+              data: matches[2]
+            }
+          });
+        }
       }
+    } catch (e) {
+      console.warn("Failed to process reference image, falling back to text-only generation", e);
     }
   }
   
@@ -118,26 +118,8 @@ export async function generateArtisticPortrait(params: ImageGenerationParams): P
       config: {
         imageConfig: {
           aspectRatio: params.aspectRatio,
-          imageSize: "1K"
-        },
-        safetySettings: [
-          {
-            category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-            threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
-          },
-          {
-            category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-            threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
-          },
-          {
-            category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-            threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
-          },
-          {
-            category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-            threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
-          }
-        ]
+          imageSize: params.isHighRes ? "2K" : "1K"
+        }
       },
     });
 
@@ -149,32 +131,45 @@ export async function generateArtisticPortrait(params: ImageGenerationParams): P
     
     // Check if safety filters blocked the response
     if (candidate.finishReason === 'SAFETY') {
-      throw new Error("La generación fue bloqueada por filtros de seguridad. El prompt podría ser demasiado sensible.");
+      throw new Error("La generación fue bloqueada por filtros de seguridad. El contenido podría ser demasiado sensible.");
+    }
+
+    if (candidate.finishReason === 'RECITATION') {
+      throw new Error("La generación fue bloqueada por derechos de autor (recitación). Intenta con un prompt más original.");
     }
 
     if (candidate.content?.parts) {
-      let rejectionText = "";
       for (const part of candidate.content.parts) {
         if (part.inlineData) {
           return `data:image/png;base64,${part.inlineData.data}`;
         }
-        if (part.text) {
-          rejectionText += part.text;
-        }
       }
       
-      if (rejectionText.trim()) {
-        throw new Error(`El modelo no devolvió una imagen poque: "${rejectionText.substring(0, 150)}..."`);
+      // If no image but has text, it might be an explanation or rejection
+      const rejectionText = candidate.content.parts
+        .filter(p => p.text)
+        .map(p => p.text)
+        .join(" ")
+        .trim();
+
+      if (rejectionText) {
+        throw new Error(`La IA no pudo generar la imagen: "${rejectionText.substring(0, 100)}..."`);
       }
     }
     
-    throw new Error("No image data returned from model. Try a different prompt or simpler style.");
+    throw new Error("El modelo aceptó el prompt pero no devolvió datos de imagen. Intenta simplificar el prompt.");
   } catch (error: any) {
-    console.error("Error generating image:", error);
-    // Propagate more helpful errors
-    if (error.message?.includes('SAFETY')) {
-      throw new Error("La IA bloqueó el prompt por seguridad. Intenta algo menos descriptivo o sensible.");
+    console.error("Error in generateArtisticPortrait:", error);
+    
+    // Friendly error mappings
+    if (error.status === 'PERMISSION_DENIED' || error.message?.includes('API key')) {
+      throw new Error("Error de API: Verifica tu configuración o cuota de Gemini.");
     }
+    
+    if (error.message?.includes('SAFETY')) {
+      throw new Error("Contenido bloqueado por seguridad. Prueba con un prompt alternativo.");
+    }
+
     throw error;
   }
 }

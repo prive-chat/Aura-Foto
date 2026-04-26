@@ -74,15 +74,15 @@ async function urlToBase64(url: string): Promise<{ data: string, mimeType: strin
 }
 
 export async function generateArtisticPortrait(params: ImageGenerationParams): Promise<string> {
-  // Use professional but direct keywords, avoiding "masterpiece" or "8k" which can trigger some filters
-  const realismKeywords = "professional photography, high resolution, sharp focus, natural lighting, realistic textures, cinematic composition";
+  // Use professional but direct keywords
+  const realismKeywords = "high resolution, sharp focus, cinematic lighting, realistic textures, artistic composition, professional photography";
   
-  // Use gemini-3.1-flash-image-preview as it's more robust for 1K resolution
-  const modelName = params.isHighRes ? 'gemini-3.1-flash-image-preview' : 'gemini-2.5-flash-image';
+  // Use gemini-2.5-flash-image for reliable image generation without 403 errors
+  const modelName = 'gemini-2.5-flash-image';
   
-  // Simplified prompt construction
+  // High-fidelity artistic prompt construction
   const stylePrefix = params.style ? `${params.style} style. ` : "";
-  const fullPrompt = `${stylePrefix}${params.prompt}. ${realismKeywords}.${params.referenceImage ? " Transform the reference image while keeping its composition." : ""}`;
+  const fullPrompt = `Artistic Portrait. Style: ${params.style || 'Cinematic'}. Prompt: ${params.prompt}. Keywords: ${realismKeywords}.${params.referenceImage ? " Transform while respecting the composition of the reference image." : ""}`;
 
   const contents: any = {
     parts: [{ text: fullPrompt }]
@@ -111,63 +111,80 @@ export async function generateArtisticPortrait(params: ImageGenerationParams): P
     }
   }
   
+  // Safety settings to prevent false-positive blocks
+  const safetySettings = [
+    { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
+    { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
+    { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
+    { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
+  ];
+  
   try {
-    const response = await ai.models.generateContent({
+    // Standard AI Studio SDK usage for gemini-2.5-flash-image
+    const request: any = {
       model: modelName,
-      contents: contents,
+      contents: contents, 
       config: {
         imageConfig: {
-          aspectRatio: params.aspectRatio,
-          imageSize: params.isHighRes ? "2K" : "1K"
+          aspectRatio: params.aspectRatio
         }
       },
-    });
+      safetySettings
+    };
+
+    const response = await ai.models.generateContent(request);
 
     if (!response.candidates || response.candidates.length === 0) {
-      throw new Error("El modelo de IA no pudo generar candidatos. Intenta con un prompt diferente.");
+      throw new Error("El modelo de IA no generó una respuesta. Por favor, intenta de nuevo.");
     }
 
     const candidate = response.candidates[0];
     
-    // Check if safety filters blocked the response
-    if (candidate.finishReason === 'SAFETY') {
-      throw new Error("La generación fue bloqueada por filtros de seguridad. El contenido podría ser demasiado sensible.");
-    }
-
-    if (candidate.finishReason === 'RECITATION') {
-      throw new Error("La generación fue bloqueada por derechos de autor (recitación). Intenta con un prompt más original.");
+    // Check for explicit finish reasons that indicate a failure to generate an image
+    if (candidate.finishReason && candidate.finishReason !== 'STOP') {
+      if (candidate.finishReason === 'SAFETY') {
+        throw new Error("La generación fue bloqueada por filtros de seguridad. El prompt podría ser demasiado sensible.");
+      }
+      if (candidate.finishReason === 'RECITATION') {
+        throw new Error("Contenido bloqueado por derechos de autor. Intenta modificar el prompt.");
+      }
+      console.warn(`Generation ended with reason: ${candidate.finishReason}`);
     }
 
     if (candidate.content?.parts) {
       for (const part of candidate.content.parts) {
-        if (part.inlineData) {
+        if (part.inlineData?.data) {
           return `data:image/png;base64,${part.inlineData.data}`;
         }
       }
       
       // If no image but has text, it might be an explanation or rejection
-      const rejectionText = candidate.content.parts
+      const textParts = candidate.content.parts
         .filter(p => p.text)
         .map(p => p.text)
         .join(" ")
         .trim();
 
-      if (rejectionText) {
-        throw new Error(`La IA no pudo generar la imagen: "${rejectionText.substring(0, 100)}..."`);
+      if (textParts) {
+        throw new Error(`La IA no pudo generar el retrato: "${textParts.substring(0, 120)}..."`);
       }
     }
     
-    throw new Error("El modelo aceptó el prompt pero no devolvió datos de imagen. Intenta simplificar el prompt.");
+    throw new Error("El modelo procesó la solicitud pero no devolvió una imagen. Intenta simplificar el prompt o cambiar el estilo.");
   } catch (error: any) {
     console.error("Error in generateArtisticPortrait:", error);
     
     // Friendly error mappings
     if (error.status === 'PERMISSION_DENIED' || error.message?.includes('API key')) {
-      throw new Error("Error de API: Verifica tu configuración o cuota de Gemini.");
+      throw new Error("Error de API: Verifica tu cuota o configuración en Google AI Studio.");
     }
     
     if (error.message?.includes('SAFETY')) {
       throw new Error("Contenido bloqueado por seguridad. Prueba con un prompt alternativo.");
+    }
+
+    if (error.message?.includes('INVALID_ARGUMENT')) {
+      throw new Error("La configuración de la imagen es inválida. Prueba con una relación de aspecto diferente.");
     }
 
     throw error;
